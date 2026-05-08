@@ -1,4 +1,23 @@
 """
+Real-time voice chat with Gemini Live, with optional vision.
+
+## What it does
+Opens a WebSocket session to the Gemini Live API and runs four concurrent streams:
+
+- **Mic in**: captures 16 kHz PCM audio from the default input device and streams
+  it to Gemini as it's recorded.
+- **Vision in** (optional): depending on `--mode`, also streams ~1 fps frames as
+  JPEGs — `camera` (default) uses the webcam via OpenCV, `screen` grabs the
+  primary display via mss, `none` disables visual input.
+- **Text in**: a `message > ` prompt on stdin lets you type a message at any
+  time (sent as a turn-completing user message). Type `q` to quit.
+- **Audio out**: streams Gemini's spoken reply (24 kHz PCM, `Zephyr` voice) and
+  plays it through the default output device. Interrupting the model clears the
+  playback queue so it stops talking immediately.
+
+Nothing is rendered on screen — the only visible UI is the `message > ` prompt
+and any text the model emits inline. Everything else is audio.
+
 ## Documentation
 Quickstart: https://github.com/google-gemini/cookbook/blob/main/quickstarts/Get_started_LiveAPI.py
 
@@ -13,7 +32,6 @@ pip install google-genai opencv-python pyaudio pillow mss
 
 import os
 import asyncio
-import base64
 import io
 import traceback
 from pathlib import Path
@@ -61,7 +79,7 @@ SEND_SAMPLE_RATE = 16000
 RECEIVE_SAMPLE_RATE = 24000
 CHUNK_SIZE = 1024
 
-MODEL = "models/gemini-3.1-flash-live-preview"
+MODEL = "models/gemini-3.1-flash-live"
 
 DEFAULT_MODE = "camera"
 
@@ -114,7 +132,13 @@ class AudioLoop:
             if text.lower() == "q":
                 break
             if self.session is not None:
-                await self.session.send(input=text or ".", end_of_turn=True)
+                await self.session.send_client_content(
+                    turns=types.Content(
+                        role="user",
+                        parts=[types.Part(text=text or ".")],
+                    ),
+                    turn_complete=True,
+                )
 
     def _get_frame(self, cap):
         # Read the frameq
@@ -135,7 +159,7 @@ class AudioLoop:
 
         mime_type = "image/jpeg"
         image_bytes = image_io.read()
-        return {"mime_type": mime_type, "data": base64.b64encode(image_bytes).decode()}
+        return {"mime_type": mime_type, "data": image_bytes}
 
     async def get_frames(self):
         # This takes about a second, and will block the whole program
@@ -176,7 +200,7 @@ class AudioLoop:
         image_io.seek(0)
 
         image_bytes = image_io.read()
-        return {"mime_type": mime_type, "data": base64.b64encode(image_bytes).decode()}
+        return {"mime_type": mime_type, "data": image_bytes}
 
     async def get_screen(self):
 
@@ -194,8 +218,13 @@ class AudioLoop:
         while True:
             if self.out_queue is not None:
                 msg = await self.out_queue.get()
-                if self.session is not None:
-                    await self.session.send(input=msg)
+                if self.session is None:
+                    continue
+                blob = types.Blob(data=msg["data"], mime_type=msg["mime_type"])
+                if msg["mime_type"].startswith("audio/"):
+                    await self.session.send_realtime_input(audio=blob)
+                else:
+                    await self.session.send_realtime_input(video=blob)
 
     async def listen_audio(self):
         mic_info = pya.get_default_input_device_info()
@@ -215,7 +244,9 @@ class AudioLoop:
         while True:
             data = await asyncio.to_thread(self.audio_stream.read, CHUNK_SIZE, **kwargs)
             if self.out_queue is not None:
-                await self.out_queue.put({"data": data, "mime_type": "audio/pcm"})
+                await self.out_queue.put(
+                    {"data": data, "mime_type": f"audio/pcm;rate={SEND_SAMPLE_RATE}"}
+                )
 
     async def receive_audio(self):
         "Background task to reads from the websocket and write pcm chunks to the output queue"
