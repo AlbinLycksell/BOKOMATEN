@@ -1,0 +1,12 @@
+project_id  = "svarsa-prod"
+region      = "europe-west4"
+github_repo = "AlbinLycksell/BOKOMATEN"
+
+# postgres_app_password — pull from 1Password and set on the command line:
+# terraform apply -var="postgres_app_password=$(op read 'op://Svarsa/postgres-app/password')"
+
+app_image    = "europe-west4-docker.pkg.dev/svarsa-prod/svarsa/app:latest"
+bridge_image = "europe-west4-docker.pkg.dev/svarsa-prod/svarsa/bridge:latest"
+
+app_domain    = "app.svarsa.se"
+bridge_domain = "bridge.svarsa.se"
