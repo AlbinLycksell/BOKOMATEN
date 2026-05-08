@@ -1,0 +1,13 @@
+.venv
+.pytest_cache
+.ruff_cache
+.pyright_cache
+__pycache__
+**/__pycache__
+*.pyc
+svarsa.db
+svarsa.db-journal
+openapi.json
+recordings
+tests
+.env*
