@@ -17,6 +17,8 @@ from svarsa.api import (
 from svarsa.bridge import ws as bridge_ws
 from svarsa.core.config import get_settings
 from svarsa.core.logging import configure_logging, get_logger
+from svarsa.core.middleware import TenantMiddleware
+from svarsa.db.seed import DEMO_FIRMA_ID
 from svarsa.db.session import init_db
 
 if TYPE_CHECKING:
@@ -51,6 +53,10 @@ def create_app() -> FastAPI:
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
+    )
+    app.add_middleware(
+        TenantMiddleware,
+        default_firma_id=DEMO_FIRMA_ID if settings.env == "dev" else None,
     )
     app.include_router(routes_health.router)
     app.include_router(routes_calls.router)
