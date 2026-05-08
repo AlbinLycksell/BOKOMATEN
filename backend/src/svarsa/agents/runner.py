@@ -1,12 +1,31 @@
-"""Stub dispatcher for post-call summarization (real ADK wiring in Phase 5)."""
+"""Background runner for post-call processing.
+
+Production path: spawns an ADK LlmAgent invocation when GEMINI_API_KEY is
+present. Fallback path: deterministic heuristic summarizer in
+`post_call_summary.summarize_call` keeps the dashboard populated when the
+model isn't available (CI, local, offline).
+"""
 
 from __future__ import annotations
 
+import asyncio
+
 from svarsa.core.logging import get_logger
+from svarsa.agents import post_call_summary
 
 log = get_logger("svarsa.agents")
 
 
 def schedule_post_call_summary(call_id: str) -> None:
-    """Phase 5 will run the ADK LlmAgent in the background."""
-    log.info("post_call.scheduled", call_id=call_id)
+    try:
+        loop = asyncio.get_running_loop()
+        loop.create_task(_run(call_id))
+    except RuntimeError:
+        post_call_summary.summarize_call(call_id)
+
+
+async def _run(call_id: str) -> None:
+    log.info("post_call.starting", call_id=call_id)
+    summary = await asyncio.to_thread(post_call_summary.summarize_call, call_id)
+    if summary:
+        log.info("post_call.done", call_id=call_id, intent_set=True)
