@@ -19,31 +19,84 @@ class Settings(BaseSettings):
         case_sensitive=False,
     )
 
+    # ---- environment ----
     env: Literal["dev", "staging", "prod"] = "dev"
     version: str = "0.1.0"
+    region: str = "europe-west4"
 
+    # ---- HTTP server ----
     api_host: str = "127.0.0.1"
     api_port: int = 8000
     cors_origins: tuple[str, ...] = ("http://localhost:3000", "http://127.0.0.1:3000")
 
+    # ---- database ----
     database_url: str = f"sqlite:///{REPO_ROOT / 'backend' / 'svarsa.db'}"
     seed_dev_data: bool = True
+    db_pool_size: int = 5
+    db_pool_max_overflow: int = 10
 
+    # ---- logging ----
+    log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
+    log_json: bool = False
+
+    # ---- realtime bridge ↔ application backend (PRD §8.2 / §8.10) ----
+    tool_dispatch_mode: Literal["local", "http"] = "local"
+    application_backend_url: str = "http://127.0.0.1:8000"
+    bridge_internal_token: str = ""
+
+    # ---- gemini live ----
+    # Two paths: (a) developer/eval — generativelanguage.googleapis.com via API key.
+    #            (b) production — Vertex AI in europe-west4 with Workload Identity.
+    gemini_provider: Literal["api_key", "vertex"] = "api_key"
     gemini_api_key: str = Field(default="", validation_alias="GEMINI_API_KEY")
     gemini_model: str = "models/gemini-3.1-flash-live-preview"
     gemini_voice: str = "Aoede"
     gemini_language: str = "sv-SE"
+    vertex_project: str = ""
+    vertex_location: str = "europe-west4"
 
-    log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
-    log_json: bool = False
+    # ---- google cloud ----
+    gcp_project: str = ""
+    gcs_bucket_prefix: str = "svarsa-rec"
+    gcs_recording_retention_days: int = 7
+    kms_keyring: str = "svarsa"
+    kms_location: str = "europe-west4"
 
-    # Realtime Bridge → Application Backend boundary (PRD §8.2 / §8.10).
-    # In dev (single deployable), the bridge dispatches tools in-process.
-    # In prod (separate Cloud Run services), it calls Application Backend
-    # over HTTPS so the two can deploy independently.
-    tool_dispatch_mode: Literal["local", "http"] = "local"
-    application_backend_url: str = "http://127.0.0.1:8000"
-    bridge_internal_token: str = ""
+    # storage_mode controls where recordings land:
+    # - "local": dev — under backend/recordings/{firma_id}/...
+    # - "gcs":   prod — per-tenant buckets `${gcs_bucket_prefix}-{firma_id}-${region}`
+    storage_mode: Literal["local", "gcs"] = "local"
+
+    # ---- redis (optional, deferred — Memorystore in prod) ----
+    redis_url: str = ""
+
+    # ---- 46elks ----
+    elks_api_username: str = ""
+    elks_api_password: str = ""
+    elks_default_sender_id: str = "Svarsa"
+    elks_webhook_secret: str = ""
+
+    # ---- auth (NextAuth-issued JWT) ----
+    auth_mode: Literal["dev_header", "jwks"] = "dev_header"
+    auth_jwks_url: str = ""
+    auth_audience: str = "svarsa-backend"
+    auth_issuer: str = "https://app.svarsa.se"
+
+    # ---- observability ----
+    sentry_dsn: str = ""
+    sentry_environment: str | None = None
+
+    @property
+    def is_postgres(self) -> bool:
+        return self.database_url.startswith("postgresql")
+
+    @property
+    def is_dev(self) -> bool:
+        return self.env == "dev"
+
+    @property
+    def is_prod(self) -> bool:
+        return self.env == "prod"
 
 
 @lru_cache(maxsize=1)
