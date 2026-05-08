@@ -7,7 +7,13 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from svarsa import __version__
-from svarsa.api import routes_health
+from svarsa.api import (
+    routes_calls,
+    routes_customers,
+    routes_firma,
+    routes_health,
+    ws_inbox,
+)
 from svarsa.bridge import ws as bridge_ws
 from svarsa.core.config import get_settings
 from svarsa.core.logging import configure_logging, get_logger
@@ -47,5 +53,9 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
     app.include_router(routes_health.router)
+    app.include_router(routes_calls.router)
+    app.include_router(routes_customers.router)
+    app.include_router(routes_firma.router)
+    app.include_router(ws_inbox.router)
     app.include_router(bridge_ws.router)
     return app

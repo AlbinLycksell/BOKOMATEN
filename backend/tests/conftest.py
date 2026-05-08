@@ -14,7 +14,7 @@ def _isolate_db() -> Iterator[None]:
     db_path = Path(tmpdir) / "test.db"
     os.environ["SVARSA_DATABASE_URL"] = f"sqlite:///{db_path}"
     os.environ["SVARSA_ENV"] = "dev"
-    os.environ["SVARSA_SEED_DEV_DATA"] = "false"
+    os.environ["SVARSA_SEED_DEV_DATA"] = "true"
     os.environ["SVARSA_LOG_LEVEL"] = "WARNING"
     from svarsa.core.config import get_settings
 
