@@ -31,6 +31,7 @@ from svarsa.core.tenant import firma_context
 from svarsa.core.time import utcnow
 from svarsa.db.session import get_engine
 from svarsa.models import Call, CallStatus, Firma, TranscriptRole, TranscriptSegment
+from svarsa.services import recording_service
 from svarsa.tools.client import ToolClient, make_tool_client
 
 log = get_logger("svarsa.bridge")
@@ -57,17 +58,19 @@ async def bridge(websocket: WebSocket, firma_id: str, call_id: str) -> None:
 
         tracker = UsageTracker(call_id=call.id)
         tool_client = make_tool_client(db)
+        recording = recording_service.RecordingBuffer(call_id=call.id, firma_id=firma_id)
         ts0 = utcnow()
 
         try:
             async with connect_gemini(firma) as session:
                 receive_task = asyncio.create_task(
                     _drain_gemini(
-                        websocket, session, db, call, tracker, tool_client, firma_id, ts0
+                        websocket, session, db, call, tracker, tool_client,
+                        recording, firma_id, ts0,
                     )
                 )
                 try:
-                    await _drain_provider(websocket, session, call, ts0, db)
+                    await _drain_provider(websocket, session, call, ts0, db, recording)
                 finally:
                     receive_task.cancel()
                     with contextlib.suppress(asyncio.CancelledError):
@@ -80,6 +83,13 @@ async def bridge(websocket: WebSocket, firma_id: str, call_id: str) -> None:
             call.ended_at = utcnow()
             call.status = CallStatus.COMPLETED
             call.billing_seconds = int((call.ended_at - call.started_at).total_seconds())
+
+            try:
+                _key, url = recording_service.finalize_and_persist(recording)
+                call.recording_url = url
+            except Exception:  # noqa: BLE001
+                log.exception("recording.persist_failed", call_id=call.id)
+
             db.add(call)
             db.commit()
             if isinstance(tool_client, object) and hasattr(tool_client, "aclose"):
@@ -96,6 +106,7 @@ async def _drain_provider(
     call: Call,
     ts0,  # type: ignore[no-untyped-def]
     db: Session,
+    recording,  # type: ignore[no-untyped-def]
 ) -> None:
     while True:
         msg = await websocket.receive_json()
@@ -114,6 +125,7 @@ async def _drain_provider(
                 continue
             mulaw = base64.b64decode(audio_b64)
             pcm16 = audio_codec.mulaw_to_pcm16k(mulaw)
+            recording.add_caller_pcm16k(pcm16)
             await session.send_realtime_input(
                 audio=gtypes.Blob(data=pcm16, mime_type="audio/pcm;rate=16000")
             )
@@ -129,6 +141,7 @@ async def _drain_gemini(
     call: Call,
     tracker: UsageTracker,
     tool_client: ToolClient,
+    recording,  # type: ignore[no-untyped-def]
     firma_id: str,
     ts0,  # type: ignore[no-untyped-def]
 ) -> None:
@@ -159,6 +172,7 @@ async def _drain_gemini(
 
             data = response.data
             if data:
+                recording.add_ai_pcm24k(data)
                 mulaw = audio_codec.pcm24k_to_mulaw(data)
                 await websocket.send_json(
                     {
