@@ -4,7 +4,7 @@ import { ChevronRightIcon, ClockIcon } from "@/components/icons";
 import { IntentBadge } from "./intent-badge";
 import { SeverityDot } from "./severity-dot";
 import { formatDurationSv, formatTimeAgoSv } from "@/lib/format";
-import type { CallRead } from "@/lib/api-types";
+import type { CallRead } from "@/lib/api-models";
 
 export function CallRow({ call }: { call: CallRead }) {
   return (

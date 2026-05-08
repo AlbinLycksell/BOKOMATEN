@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import type { Severity } from "@/lib/api-types";
+import type { Severity } from "@/lib/api-models";
 
 const COLOR: Record<Severity, string> = {
   critical: "bg-critical",

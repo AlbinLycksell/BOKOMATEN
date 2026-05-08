@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import type { TranscriptSegmentRead } from "@/lib/api-types";
+import type { TranscriptSegmentRead } from "@/lib/api-models";
 
 const ROLE_LABEL: Record<TranscriptSegmentRead["role"], string> = {
   caller: "Kund",

@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import type { Intent } from "@/lib/api-types";
+import type { Intent } from "@/lib/api-models";
 
 const LABEL: Record<Intent, string> = {
   akut: "Akut",

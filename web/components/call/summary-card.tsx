@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import type { CallSummary } from "@/lib/api-types";
+import type { CallSummary } from "@/lib/api-models";
 
 export function SummaryCard({ summary }: { summary: CallSummary | null }) {
   if (!summary) {

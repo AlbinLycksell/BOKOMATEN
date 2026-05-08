@@ -2,7 +2,7 @@ import { Topbar } from "@/components/shell/topbar";
 import { Card, CardContent } from "@/components/ui/card";
 import { listCustomers } from "@/lib/api";
 import { formatPhoneSv } from "@/lib/format";
-import type { CustomerRead } from "@/lib/api-types";
+import type { CustomerRead } from "@/lib/api-models";
 
 export const dynamic = "force-dynamic";
 

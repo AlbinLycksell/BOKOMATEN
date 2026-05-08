@@ -11,6 +11,7 @@ import { IntentBadge } from "@/components/inbox/intent-badge";
 import { SeverityDot } from "@/components/inbox/severity-dot";
 import { getCall } from "@/lib/api";
 import { formatDateSv, formatTimeSv, formatDurationSv } from "@/lib/format";
+import type { ToolInvocationRead } from "@/lib/api-models";
 
 export const dynamic = "force-dynamic";
 
@@ -73,7 +74,7 @@ export default async function CallPage({
                 </CardHeader>
                 <CardContent>
                   <ul className="flex flex-col gap-2">
-                    {call.tool_invocations.map((t, i) => (
+                    {call.tool_invocations.map((t: ToolInvocationRead, i: number) => (
                       <li
                         key={i}
                         className="flex items-center justify-between text-sm border-b border-border pb-2 last:border-b-0 last:pb-0"

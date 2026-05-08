@@ -2,7 +2,7 @@ import { Topbar } from "@/components/shell/topbar";
 import { CallRow } from "@/components/inbox/call-row";
 import { FilterBar } from "@/components/inbox/filter-bar";
 import { listCalls } from "@/lib/api";
-import type { CallRead } from "@/lib/api-types";
+import type { CallRead } from "@/lib/api-models";
 
 export const dynamic = "force-dynamic";
 

@@ -4,7 +4,7 @@ import type {
   CustomerRead,
   FirmaRead,
   Intent,
-} from "./api-types";
+} from "./api-models";
 
 const API_BASE =
   typeof window === "undefined"
