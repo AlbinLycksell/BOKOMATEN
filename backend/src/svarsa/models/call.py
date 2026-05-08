@@ -54,6 +54,7 @@ class ToolInvocation(SQLModel, table=True):
     __tablename__ = "tool_invocation"
 
     id: str = SQLField(default_factory=new_id, primary_key=True)
+    firma_id: str = SQLField(foreign_key="firma.id", index=True)
     call_id: str = SQLField(foreign_key="call.id", index=True)
     name: str = SQLField(index=True)
     args: dict[str, Any] = SQLField(default_factory=dict, sa_column=Column(JSON))

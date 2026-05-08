@@ -1,5 +1,6 @@
 """Tables imported here so SQLModel.metadata.create_all() picks them up."""
 
+from svarsa.models.audit import AuditLog, AuditLogRead
 from svarsa.models.call import (
     Call,
     CallDetailRead,
@@ -46,6 +47,8 @@ from svarsa.models.job import Job, JobRead
 
 __all__ = [
     "Address",
+    "AuditLog",
+    "AuditLogRead",
     "Call",
     "CallDetailRead",
     "CallRead",

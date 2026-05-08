@@ -238,6 +238,7 @@ def dispatch(ctx: ToolContext, name: str, args: dict[str, Any]) -> dict[str, Any
     if ctx.call_id is not None:
         ctx.session.add(
             ToolInvocation(
+                firma_id=ctx.firma_id,
                 call_id=ctx.call_id,
                 name=name,
                 args=args,

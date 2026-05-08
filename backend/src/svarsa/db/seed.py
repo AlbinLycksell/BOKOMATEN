@@ -152,17 +152,17 @@ def seed_dev_data() -> None:
         )
         s.add_all(
             [
-                ToolInvocation(call_id=akut.id, name="lookup_customer",
+                ToolInvocation(firma_id=DEMO_FIRMA_ID, call_id=akut.id, name="lookup_customer",
                                args={"phone_number": inger.phone},
                                result={"found": True, "customer_id": inger.id, "name": inger.name},
                                latency_ms=42),
-                ToolInvocation(call_id=akut.id, name="triage_emergency",
+                ToolInvocation(firma_id=DEMO_FIRMA_ID, call_id=akut.id, name="triage_emergency",
                                args={"problem_description": "vattenläcka, rinner",
                                      "trade": "vvs", "indicators_present": ["lacka", "rinner"]},
                                result={"is_emergency": True, "severity": "high",
                                        "recommended_action": "escalate_now"},
                                latency_ms=12),
-                ToolInvocation(call_id=akut.id, name="escalate_to_owner",
+                ToolInvocation(firma_id=DEMO_FIRMA_ID, call_id=akut.id, name="escalate_to_owner",
                                args={"severity": "high", "reason": "vattenläcka",
                                      "customer_phone": inger.phone},
                                result={"escalation_id": "01J", "contacted": ["+46708111222"]},
