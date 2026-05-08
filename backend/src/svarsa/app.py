@@ -16,6 +16,7 @@ from svarsa.api import (
     ws_inbox,
 )
 from svarsa.bridge import ws as bridge_ws
+from svarsa.integrations import elks_voice
 from svarsa.core.config import get_settings
 from svarsa.core.logging import configure_logging, get_logger
 from svarsa.core.middleware import TenantMiddleware
@@ -64,6 +65,7 @@ def create_app() -> FastAPI:
     app.include_router(routes_customers.router)
     app.include_router(routes_firma.router)
     app.include_router(routes_tools.router)
+    app.include_router(elks_voice.router)
     app.include_router(ws_inbox.router)
     app.include_router(bridge_ws.router)
     return app
