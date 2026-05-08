@@ -1,4 +1,17 @@
-"""FastAPI middleware that resolves and binds the tenant scope per request."""
+"""FastAPI middleware that resolves and binds the tenant scope per request.
+
+Two paths:
+
+- ``Settings.auth_mode == "dev_header"`` — reads ``X-Firma-Id``. Used for
+  local dev and the bridge ↔ backend internal call (with the
+  ``X-Internal-Token`` denyability gate elsewhere).
+- ``Settings.auth_mode == "jwks"`` — reads a Bearer JWT, verifies via
+  NextAuth JWKS, extracts ``firma_id`` from the verified claim. The
+  ``X-Firma-Id`` header is ignored on JWKS paths to prevent spoofing.
+
+Routes that don't require a firma scope (``/health``, ``/api/auth/*``,
+the ``/ws/*`` paths which authenticate inline) are skipped.
+"""
 
 from __future__ import annotations
 
@@ -7,23 +20,52 @@ from collections.abc import Awaitable, Callable
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from svarsa.core.auth import AuthError, verify_jwt
+from svarsa.core.config import Settings, get_settings
+from svarsa.core.logging import get_logger
 from svarsa.core.tenant import firma_context
 
+log = get_logger("svarsa.middleware")
+
 DEV_FIRMA_HEADER = "X-Firma-Id"
+SKIP_PATH_PREFIXES = ("/health", "/api/auth", "/ws/")
 
 
 class TenantMiddleware(BaseHTTPMiddleware):
-    """Dev-mode auth shim: read X-Firma-Id and bind it. Replace with OAuth in Phase 1."""
-
-    def __init__(self, app, default_firma_id: str | None = None) -> None:  # type: ignore[no-untyped-def]
+    def __init__(
+        self,
+        app,  # type: ignore[no-untyped-def]
+        *,
+        default_firma_id: str | None = None,
+        settings: Settings | None = None,
+    ) -> None:
         super().__init__(app)
         self.default_firma_id = default_firma_id
+        self.settings = settings or get_settings()
 
     async def dispatch(
         self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
-        firma_id = request.headers.get(DEV_FIRMA_HEADER) or self.default_firma_id
+        path = request.url.path
+        if any(path.startswith(p) for p in SKIP_PATH_PREFIXES):
+            return await call_next(request)
+
+        firma_id = self._resolve_firma_id(request)
         if firma_id is None:
             return await call_next(request)
         with firma_context(firma_id):
             return await call_next(request)
+
+    def _resolve_firma_id(self, request: Request) -> str | None:
+        if self.settings.auth_mode == "jwks":
+            auth = request.headers.get("Authorization", "")
+            if not auth.startswith("Bearer "):
+                return None
+            token = auth.removeprefix("Bearer ").strip()
+            try:
+                ctx = verify_jwt(token, self.settings)
+                return ctx.firma_id
+            except AuthError as exc:
+                log.warning("auth.rejected", reason=str(exc))
+                return None
+        return request.headers.get(DEV_FIRMA_HEADER) or self.default_firma_id
