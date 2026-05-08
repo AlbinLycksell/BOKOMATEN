@@ -31,7 +31,7 @@ from svarsa.core.tenant import firma_context
 from svarsa.core.time import utcnow
 from svarsa.db.session import get_engine
 from svarsa.models import Call, CallStatus, Firma, TranscriptRole, TranscriptSegment
-from svarsa.services import recording_service
+from svarsa.services import recording_service, redaction_service
 from svarsa.tools.client import ToolClient, make_tool_client
 
 log = get_logger("svarsa.bridge")
@@ -199,6 +199,29 @@ def _persist_text(
     text: str,
     ts0,  # type: ignore[no-untyped-def]
 ) -> None:
+    redaction = redaction_service.redact(text)
     offset_ms = int((utcnow() - ts0).total_seconds() * 1000)
-    db.add(TranscriptSegment(call_id=call_id, role=role, text=text, ts_ms_offset=offset_ms))
+    db.add(
+        TranscriptSegment(
+            call_id=call_id,
+            role=role,
+            text=redaction.redacted,
+            ts_ms_offset=offset_ms,
+        )
+    )
     db.commit()
+    if redaction.spans:
+        from svarsa.services import audit_service
+
+        audit_service.record(
+            db,
+            actor="system",
+            action="transcript.redacted",
+            target_type="call",
+            target_id=call_id,
+            payload={
+                "labels": [label for label, _ in redaction.spans],
+                "role": role.value,
+                "ts_ms_offset": offset_ms,
+            },
+        )
