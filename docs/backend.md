@@ -6,18 +6,21 @@ Python 3.13 / FastAPI / Pydantic v2 / SQLModel. Managed by `uv`. Lives in `backe
 
 ```
 backend/src/svarsa/
-├── core/         config, structlog, ULIDs, time helpers (Europe/Stockholm)
+├── core/         config, structlog, ULIDs, time, tenant context, middleware
 ├── db/           SQLModel engine, session factory, dev seed
-├── models/       Pydantic + SQLModel tables (PRD §8.6)
-├── tools/        12 function-calling tools — schemas, declarations, dispatch
-├── services/     Triage, customer, booking, escalation, notification, ROT
+├── models/       Pydantic + SQLModel tables (PRD §8.6 + audit_log)
+├── tools/        12 function-calling tools — schemas, declarations, dispatch + client
+├── services/     Triage, customer, booking, escalation, notification, ROT, audit
 ├── bridge/       Realtime bridge — audio transcode, Gemini session, WS endpoint
 ├── agents/       Post-call summarizer (ADK + heuristic fallback)
-├── api/          Owner REST routes + live inbox WS
+├── api/          Owner REST routes + live inbox WS + /api/tools/dispatch
 ├── integrations/ External systems (placeholder; mock impls live in services)
 ├── scripts/      uv entrypoints (dump_openapi)
-└── app.py        FastAPI factory — wires everything together
+├── app.py        Application Backend factory — REST + dashboard WS
+└── bridge_app.py Realtime Bridge factory — telephony WS + health
 ```
+
+Two FastAPI factories share the same package per PRD §2 (single language, two services). Dev runs the umbrella `svarsa.app:create_app` which mounts everything; prod runs them as separate Cloud Run services with `Settings.tool_dispatch_mode = "http"`.
 
 `tests/` mirrors the modules above. `conftest.py` isolates each session into a tmpdir SQLite and seeds the demo firma.
 
@@ -37,6 +40,18 @@ backend/src/svarsa/
 ### Configuration
 
 All settings come from `Settings` in `core.config` — populated from `.env` then `.env.local` (see `.env` precedence in this repo). Keys are prefixed `SVARSA_*` except `GEMINI_API_KEY`. Never read `os.environ` directly outside `core.config`.
+
+Production-relevant flags:
+
+- `SVARSA_TOOL_DISPATCH_MODE=http` — bridge calls Application Backend over HTTPS instead of in-process
+- `SVARSA_APPLICATION_BACKEND_URL=https://app.svarsa.se` — target for HTTP dispatch
+- `SVARSA_BRIDGE_INTERNAL_TOKEN=<secret>` — verified by `/api/tools/dispatch`
+
+### Tenant context
+
+Every request binds `firma_id` via `core/middleware.TenantMiddleware` → `core/tenant.firma_context`. structlog merges it into every log line. Inside services that touch tenant data, prefer `require_firma_id()` over receiving `firma_id` as a parameter when the call site is HTTP-driven — it surfaces missing-context bugs as crashes, not silent leaks.
+
+See [`multi-tenancy.md`](./multi-tenancy.md) for the full policy.
 
 ### Pydantic vs. SQLModel split
 

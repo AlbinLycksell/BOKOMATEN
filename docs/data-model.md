@@ -88,6 +88,25 @@ Per-utterance row. `role` is `caller | ai | system`. `ts_ms_offset` is milliseco
 
 Every function call the AI made during a session, in invocation order. Persisted via `ToolContext.session.add(...)` inside `tools.handlers.dispatch()`. Includes `latency_ms` for SLO monitoring.
 
+`firma_id` is carried **redundantly** alongside `call_id → firma_id` (PRD §4 update). The redundancy is intentional: it makes per-tenant leak-detection queries trivial and tenant erasure a single statement on each table.
+
+### `audit_log`
+
+Append-only audit trail for all actions that affect tenant data (PRD §8.9).
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | ULID pk |
+| `firma_id` | fk indexed |
+| `actor` | `str` indexed | User id, `"ai"`, `"system"`, or external service name. |
+| `action` | `str` indexed | Verb-noun pair: `tool.invoked`, `call.created`, `settings.updated`. |
+| `target_type` | `str?` | Optional referenced entity type. |
+| `target_id` | `str?` indexed | Optional id. |
+| `payload` | `JSON` | Action-specific context. |
+| `created_at` | `datetime` indexed |
+
+Written via `services.audit_service.record(...)` which refuses to write without a tenant context bound (`require_firma_id()`). Logically partitioned by `firma_id` so per-firma exports are a single index seek.
+
 ### `job`
 
 A scheduled or completed unit of work tied to a customer (and usually a call). `intent` is preserved so reporting can split `akut` actuals from `bokning` actuals.
@@ -117,6 +136,12 @@ These are validated into Pydantic models at the read boundary, so callers never 
 - `TranscriptSegment(call_id, ts_ms_offset)` for ordered fetch.
 - `ToolInvocation(call_id, invoked_at)` likewise.
 
+## Multi-tenancy
+
+Every tenant-scoped table carries a non-nullable `firma_id` foreign key to `firma`. See [`multi-tenancy.md`](./multi-tenancy.md) for the layered isolation policy (request context, structlog binding, Postgres RLS, repository discipline, cache prefixes, per-tenant GCS, audit log, tenant erasure).
+
 ## Migrations
 
 MVP uses `SQLModel.metadata.create_all()` against SQLite for fast iteration. Production switch to Alembic happens before the first prod write — model changes today are not migration-tracked.
+
+Migration discipline is forward-only and two-phase (PRD §8.10): deploy code tolerating both schemas → migrate → deploy code using new schema only. Backfills run as Cloud Run Jobs in a separate window from regular deploys.
