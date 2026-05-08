@@ -21,14 +21,17 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from google.genai import types as gtypes
 from sqlmodel import Session
 
+import structlog
+
 from svarsa.bridge import audio as audio_codec
 from svarsa.bridge.gemini_session import connect as connect_gemini
 from svarsa.bridge.usage_tracker import UsageTracker
 from svarsa.core.logging import get_logger
+from svarsa.core.tenant import firma_context
 from svarsa.core.time import utcnow
 from svarsa.db.session import get_engine
 from svarsa.models import Call, CallStatus, Firma, TranscriptRole, TranscriptSegment
-from svarsa.tools.handlers import ToolContext, dispatch
+from svarsa.tools.client import ToolClient, make_tool_client
 
 log = get_logger("svarsa.bridge")
 router = APIRouter()
@@ -37,9 +40,10 @@ router = APIRouter()
 @router.websocket("/ws/bridge/{firma_id}/{call_id}")
 async def bridge(websocket: WebSocket, firma_id: str, call_id: str) -> None:
     await websocket.accept()
-    log.info("bridge.connected", firma=firma_id, call=call_id)
 
-    with Session(get_engine()) as db:
+    with firma_context(firma_id), Session(get_engine()) as db:
+        structlog.contextvars.bind_contextvars(call_id=call_id)
+        log.info("bridge.connected")
         firma = db.get(Firma, firma_id)
         if firma is None:
             await websocket.send_json({"event": "error", "payload": {"reason": "unknown_firma"}})
@@ -52,13 +56,15 @@ async def bridge(websocket: WebSocket, firma_id: str, call_id: str) -> None:
         db.refresh(call)
 
         tracker = UsageTracker(call_id=call.id)
-        ctx = ToolContext(session=db, firma_id=firma_id, call_id=call_id)
+        tool_client = make_tool_client(db)
         ts0 = utcnow()
 
         try:
             async with connect_gemini(firma) as session:
                 receive_task = asyncio.create_task(
-                    _drain_gemini(websocket, session, db, call, tracker, ctx, ts0)
+                    _drain_gemini(
+                        websocket, session, db, call, tracker, tool_client, firma_id, ts0
+                    )
                 )
                 try:
                     await _drain_provider(websocket, session, call, ts0, db)
@@ -67,18 +73,21 @@ async def bridge(websocket: WebSocket, firma_id: str, call_id: str) -> None:
                     with contextlib.suppress(asyncio.CancelledError):
                         await receive_task
         except WebSocketDisconnect:
-            log.info("bridge.disconnected", call=call.id)
+            log.info("bridge.disconnected")
         except Exception:  # noqa: BLE001
-            log.exception("bridge.error", call=call.id)
+            log.exception("bridge.error")
         finally:
             call.ended_at = utcnow()
             call.status = CallStatus.COMPLETED
             call.billing_seconds = int((call.ended_at - call.started_at).total_seconds())
             db.add(call)
             db.commit()
+            if isinstance(tool_client, object) and hasattr(tool_client, "aclose"):
+                await tool_client.aclose()  # type: ignore[no-untyped-call]
             from svarsa.agents.runner import schedule_post_call_summary
 
             schedule_post_call_summary(call.id)
+            structlog.contextvars.unbind_contextvars("call_id")
 
 
 async def _drain_provider(
@@ -119,7 +128,8 @@ async def _drain_gemini(
     db: Session,
     call: Call,
     tracker: UsageTracker,
-    ctx: ToolContext,
+    tool_client: ToolClient,
+    firma_id: str,
     ts0,  # type: ignore[no-untyped-def]
 ) -> None:
     while True:
@@ -130,7 +140,12 @@ async def _drain_gemini(
             if response.tool_call:
                 for fc in response.tool_call.function_calls or []:
                     args: dict[str, Any] = dict(fc.args or {})
-                    result = dispatch(ctx, fc.name or "", args)
+                    result = await tool_client.dispatch(
+                        firma_id=firma_id,
+                        call_id=call.id,
+                        name=fc.name or "",
+                        args=args,
+                    )
                     await session.send_tool_response(
                         function_responses=[
                             gtypes.FunctionResponse(

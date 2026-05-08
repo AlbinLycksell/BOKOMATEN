@@ -37,6 +37,14 @@ class Settings(BaseSettings):
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
     log_json: bool = False
 
+    # Realtime Bridge → Application Backend boundary (PRD §8.2 / §8.10).
+    # In dev (single deployable), the bridge dispatches tools in-process.
+    # In prod (separate Cloud Run services), it calls Application Backend
+    # over HTTPS so the two can deploy independently.
+    tool_dispatch_mode: Literal["local", "http"] = "local"
+    application_backend_url: str = "http://127.0.0.1:8000"
+    bridge_internal_token: str = ""
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:

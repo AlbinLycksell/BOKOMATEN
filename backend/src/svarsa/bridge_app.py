@@ -1,3 +1,16 @@
+"""Realtime Bridge — separate FastAPI factory for independent deploy (PRD §8.10).
+
+Production: this runs as its own Cloud Run service with min-instances ≥ 2,
+60 min request timeout, weekly Sunday-04:00-CET deploys with traffic-split
+canary. Tool calls go to the Application Backend over the VPC connector,
+not over public internet — Settings.tool_dispatch_mode = "http".
+
+Dev: a single `uvicorn svarsa.app:create_app --factory` already exposes
+the bridge at the same /ws/bridge/... endpoint via the umbrella factory.
+This module is for the prod-shape topology and to keep the deploy
+boundary unambiguous in code.
+"""
+
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
@@ -7,19 +20,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from svarsa import __version__
-from svarsa.api import (
-    routes_calls,
-    routes_customers,
-    routes_firma,
-    routes_health,
-    routes_tools,
-    ws_inbox,
-)
+from svarsa.api import routes_health
 from svarsa.bridge import ws as bridge_ws
 from svarsa.core.config import get_settings
 from svarsa.core.logging import configure_logging, get_logger
 from svarsa.core.middleware import TenantMiddleware
-from svarsa.db.seed import DEMO_FIRMA_ID
 from svarsa.db.session import init_db
 
 if TYPE_CHECKING:
@@ -30,21 +35,23 @@ if TYPE_CHECKING:
 async def _lifespan(app: FastAPI) -> "AsyncIterator[None]":
     settings = get_settings()
     configure_logging(settings)
-    log = get_logger("svarsa.app")
-    log.info("startup", env=settings.env, version=__version__)
+    log = get_logger("svarsa.bridge_app")
+    log.info(
+        "bridge.startup",
+        env=settings.env,
+        version=__version__,
+        dispatch_mode=settings.tool_dispatch_mode,
+        backend=settings.application_backend_url,
+    )
     init_db()
-    if settings.seed_dev_data and settings.env == "dev":
-        from svarsa.db.seed import seed_dev_data
-
-        seed_dev_data()
     yield
-    log.info("shutdown")
+    log.info("bridge.shutdown")
 
 
-def create_app() -> FastAPI:
+def create_bridge_app() -> FastAPI:
     settings = get_settings()
     app = FastAPI(
-        title="Svarsa API",
+        title="Svarsa Realtime Bridge",
         version=__version__,
         lifespan=_lifespan,
     )
@@ -55,15 +62,7 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    app.add_middleware(
-        TenantMiddleware,
-        default_firma_id=DEMO_FIRMA_ID if settings.env == "dev" else None,
-    )
+    app.add_middleware(TenantMiddleware)
     app.include_router(routes_health.router)
-    app.include_router(routes_calls.router)
-    app.include_router(routes_customers.router)
-    app.include_router(routes_firma.router)
-    app.include_router(routes_tools.router)
-    app.include_router(ws_inbox.router)
     app.include_router(bridge_ws.router)
     return app
