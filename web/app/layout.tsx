@@ -1,0 +1,27 @@
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+
+import "./globals.css";
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-sans",
+  display: "swap",
+});
+
+export const metadata: Metadata = {
+  title: "Svarsa AI",
+  description: "Voice-first AI receptionist for Swedish hantverkare.",
+};
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="sv" className={inter.variable}>
+      <body className="bg-bg text-text antialiased min-h-screen">{children}</body>
+    </html>
+  );
+}
