@@ -1,0 +1,81 @@
+name: deploy-bridge
+
+# Bridge deploys are intentionally manual (PRD §8.10): weekly Sunday 04:00 CET
+# canary 5% → 25% → 100%. Trigger via workflow_dispatch.
+
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: "Commit SHA to deploy (defaults to main)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  GCP_REGION: europe-west4
+  SERVICE: svarsa-bridge
+  IMAGE_BASE: europe-west4-docker.pkg.dev
+
+jobs:
+  canary:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.sha || github.sha }}
+
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOY_SA }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: configure docker auth
+        run: gcloud auth configure-docker ${{ env.IMAGE_BASE }} --quiet
+
+      - name: build and push
+        run: |
+          SHORT="${GITHUB_SHA::12}"
+          IMAGE="${IMAGE_BASE}/${{ secrets.GCP_PROJECT }}/svarsa/bridge:${SHORT}"
+          docker build -f backend/Dockerfile.bridge -t "$IMAGE" backend
+          docker push "$IMAGE"
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+          echo "REVISION=svarsa-bridge-${SHORT}" >> "$GITHUB_ENV"
+
+      - name: deploy revision (no traffic)
+        run: |
+          gcloud run deploy "$SERVICE" \
+            --image "$IMAGE" \
+            --region "$GCP_REGION" \
+            --project "${{ secrets.GCP_PROJECT }}" \
+            --no-traffic \
+            --revision-suffix "${GITHUB_SHA::8}" \
+            --quiet
+
+      - name: canary 5%
+        run: |
+          gcloud run services update-traffic "$SERVICE" \
+            --to-revisions "${SERVICE}-${GITHUB_SHA::8}=5" \
+            --region "$GCP_REGION" \
+            --project "${{ secrets.GCP_PROJECT }}"
+          sleep 600
+
+      - name: canary 25%
+        run: |
+          gcloud run services update-traffic "$SERVICE" \
+            --to-revisions "${SERVICE}-${GITHUB_SHA::8}=25" \
+            --region "$GCP_REGION" \
+            --project "${{ secrets.GCP_PROJECT }}"
+          sleep 1200
+
+      - name: 100%
+        run: |
+          gcloud run services update-traffic "$SERVICE" \
+            --to-revisions "${SERVICE}-${GITHUB_SHA::8}=100" \
+            --region "$GCP_REGION" \
+            --project "${{ secrets.GCP_PROJECT }}"

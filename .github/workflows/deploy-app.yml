@@ -1,0 +1,50 @@
+name: deploy-app
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - ".github/workflows/deploy-app.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  GCP_REGION: europe-west4
+  SERVICE: svarsa-app
+  IMAGE_BASE: europe-west4-docker.pkg.dev
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOY_SA }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: configure docker auth
+        run: gcloud auth configure-docker ${{ env.IMAGE_BASE }} --quiet
+
+      - name: build and push
+        run: |
+          IMAGE="${IMAGE_BASE}/${{ secrets.GCP_PROJECT }}/svarsa/app:${GITHUB_SHA::12}"
+          docker build -f backend/Dockerfile.app -t "$IMAGE" backend
+          docker push "$IMAGE"
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+
+      - name: deploy to cloud run
+        run: |
+          gcloud run deploy "$SERVICE" \
+            --image "$IMAGE" \
+            --region "$GCP_REGION" \
+            --project "${{ secrets.GCP_PROJECT }}" \
+            --quiet
