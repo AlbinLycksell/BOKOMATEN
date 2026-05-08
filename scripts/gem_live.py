@@ -33,6 +33,7 @@ pip install google-genai opencv-python pyaudio pillow mss
 import os
 import asyncio
 import io
+import sys
 import traceback
 from pathlib import Path
 
@@ -79,7 +80,7 @@ SEND_SAMPLE_RATE = 16000
 RECEIVE_SAMPLE_RATE = 24000
 CHUNK_SIZE = 1024
 
-MODEL = "models/gemini-3.1-flash-live"
+MODEL = "models/gemini-3.1-flash-live-preview"
 
 DEFAULT_MODE = "camera"
 
@@ -122,6 +123,21 @@ class AudioLoop:
         self.play_audio_task = None
 
         self.audio_stream = None
+
+        # Cumulative token usage across the session.
+        # prompt_* is naturally session-cumulative on the wire (server reports
+        # the running input total each frame). response/thoughts/tool reset per
+        # turn, so we track a per-turn rolling max and absorb it on turn end.
+        self._cum_prompt = 0
+        self._cum_response = 0
+        self._cum_thoughts = 0
+        self._cum_tool_use = 0
+        self._cum_prompt_modalities: dict[str, int] = {}
+        self._cum_response_modalities: dict[str, int] = {}
+        self._turn_response = 0
+        self._turn_thoughts = 0
+        self._turn_tool_use = 0
+        self._turn_response_modalities: dict[str, int] = {}
 
     async def send_text(self):
         while True:
@@ -248,17 +264,89 @@ class AudioLoop:
                     {"data": data, "mime_type": f"audio/pcm;rate={SEND_SAMPLE_RATE}"}
                 )
 
+    @staticmethod
+    def _modality_dict(details) -> dict[str, int]:
+        """Convert list[ModalityTokenCount] → {modality_name: token_count}, dropping zeros."""
+        out: dict[str, int] = {}
+        if not details:
+            return out
+        for d in details:
+            if d is None or not d.token_count:
+                continue
+            name = getattr(d.modality, "name", str(d.modality)).lower()
+            out[name] = d.token_count
+        return out
+
+    @staticmethod
+    def _fmt_modalities(d: dict[str, int]) -> str:
+        if not d:
+            return ""
+        return " (" + " ".join(f"{k}={v}" for k, v in sorted(d.items())) + ")"
+
+    def _update_usage(self, usage) -> None:
+        # Prompt is cumulative across the session — server keeps the running total.
+        if usage.prompt_token_count is not None:
+            self._cum_prompt = usage.prompt_token_count
+        prompt_mods = self._modality_dict(usage.prompt_tokens_details)
+        if prompt_mods:
+            self._cum_prompt_modalities = prompt_mods
+        # Response/thoughts/tool reset each turn — track per-turn rolling max.
+        if usage.response_token_count is not None:
+            self._turn_response = max(self._turn_response, usage.response_token_count)
+        if usage.thoughts_token_count is not None:
+            self._turn_thoughts = max(self._turn_thoughts, usage.thoughts_token_count)
+        if usage.tool_use_prompt_token_count is not None:
+            self._turn_tool_use = max(self._turn_tool_use, usage.tool_use_prompt_token_count)
+        for k, v in self._modality_dict(usage.response_tokens_details).items():
+            self._turn_response_modalities[k] = max(
+                self._turn_response_modalities.get(k, 0), v
+            )
+        self._render_usage()
+
+    def _finish_turn(self) -> None:
+        """Lock the current turn's response/thoughts/tool counters into the session totals."""
+        self._cum_response += self._turn_response
+        self._cum_thoughts += self._turn_thoughts
+        self._cum_tool_use += self._turn_tool_use
+        for k, v in self._turn_response_modalities.items():
+            self._cum_response_modalities[k] = self._cum_response_modalities.get(k, 0) + v
+        self._turn_response = 0
+        self._turn_thoughts = 0
+        self._turn_tool_use = 0
+        self._turn_response_modalities = {}
+        self._render_usage()
+
+    def _render_usage(self) -> None:
+        resp_now = self._cum_response + self._turn_response
+        thoughts_now = self._cum_thoughts + self._turn_thoughts
+        tool_now = self._cum_tool_use + self._turn_tool_use
+        grand_total = self._cum_prompt + resp_now + thoughts_now + tool_now
+        merged_resp = dict(self._cum_response_modalities)
+        for k, v in self._turn_response_modalities.items():
+            merged_resp[k] = merged_resp.get(k, 0) + v
+        line = (
+            f"[tokens] prompt={self._cum_prompt}"
+            f"{self._fmt_modalities(self._cum_prompt_modalities)}  "
+            f"resp={resp_now}{self._fmt_modalities(merged_resp)}  "
+            f"total={grand_total}  thoughts={thoughts_now}"
+        )
+        sys.stderr.write(f"\r\x1b[2K{line}")
+        sys.stderr.flush()
+
     async def receive_audio(self):
         "Background task to reads from the websocket and write pcm chunks to the output queue"
         while True:
             if self.session is not None:
                 turn = self.session.receive()
                 async for response in turn:
+                    if usage := response.usage_metadata:
+                        self._update_usage(usage)
                     if data := response.data:
                         self.audio_in_queue.put_nowait(data)
                         continue
                     if text := response.text:
                         print(text, end="")
+                self._finish_turn()
 
                 # If you interrupt the model, it sends a turn_complete.
                 # For interruptions to work, we need to stop playback.
@@ -275,10 +363,16 @@ class AudioLoop:
             rate=RECEIVE_SAMPLE_RATE,
             output=True,
         )
-        while True:
-            if self.audio_in_queue is not None:
-                bytestream = await self.audio_in_queue.get()
-                await asyncio.to_thread(stream.write, bytestream)
+        try:
+            while True:
+                if self.audio_in_queue is not None:
+                    bytestream = await self.audio_in_queue.get()
+                    await asyncio.to_thread(stream.write, bytestream)
+        finally:
+            try:
+                stream.close()
+            except Exception:
+                pass
 
     async def run(self):
         try:
@@ -308,9 +402,18 @@ class AudioLoop:
         except asyncio.CancelledError:
             pass
         except ExceptionGroup as EG:
-            if self.audio_stream is not None:
-                self.audio_stream.close()
-                traceback.print_exception(EG)
+            traceback.print_exception(EG)
+        finally:
+            # Close the mic stream so its blocking read() in a worker thread returns,
+            # otherwise loop.shutdown_default_executor() hangs joining it.
+            try:
+                if self.audio_stream is not None:
+                    self.audio_stream.close()
+                    self.audio_stream = None
+            except Exception:
+                pass
+            sys.stderr.write("\n")
+            sys.stderr.flush()
 
 
 if __name__ == "__main__":
@@ -324,4 +427,21 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     main = AudioLoop(video_mode=args.mode)
-    asyncio.run(main.run())
+    exit_code = 0
+    try:
+        asyncio.run(main.run())
+    except KeyboardInterrupt:
+        sys.stderr.write("\n")
+        sys.stderr.flush()
+    except Exception:
+        traceback.print_exc()
+        exit_code = 1
+    finally:
+        try:
+            pya.terminate()
+        except Exception:
+            pass
+        # Worker threads spawned by asyncio.to_thread (input(), pyaudio reads,
+        # cv2 capture) may still be blocked in syscalls; the interpreter's
+        # atexit hook would otherwise hang joining them. Hard-exit instead.
+        os._exit(exit_code)
