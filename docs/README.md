@@ -16,6 +16,7 @@ Voice-first AI receptionist for Swedish hantverkare. Built on Gemini 3.1 Flash L
 | Understand the realtime call lifecycle | [`realtime-bridge.md`](./realtime-bridge.md) |
 | See planned MVP work | [`superpowers/plans/2026-05-09-svarsa-mvp-foundation.md`](./superpowers/plans/2026-05-09-svarsa-mvp-foundation.md) |
 | See what's next + required inputs | [`superpowers/plans/2026-05-09-svarsa-next-steps.md`](./superpowers/plans/2026-05-09-svarsa-next-steps.md) |
+| Fill in the input form (founders) | [`superpowers/plans/2026-05-09-svarsa-input-form.md`](./superpowers/plans/2026-05-09-svarsa-input-form.md) |
 | ADK reference | [`adk/llms-full.txt`](./adk/llms-full.txt) |
 
 The product spec is [`../PRD.md`](../PRD.md).
