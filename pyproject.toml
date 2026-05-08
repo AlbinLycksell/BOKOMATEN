@@ -1,0 +1,33 @@
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+extend-exclude = [".venv", "backend/.venv", "web/.next", "web/node_modules", "scripts/gem_live.py"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "ASYNC", "RUF", "SIM", "PL", "PERF", "TCH"]
+ignore = ["E501", "PLR0913", "PLR2004"]
+
+[tool.ruff.lint.per-file-ignores]
+"backend/tests/*" = ["PLR2004", "S101"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.pyright]
+include = ["backend/src", "backend/tests"]
+exclude = ["**/__pycache__", "**/.venv", "scripts/gem_live.py"]
+pythonVersion = "3.13"
+typeCheckingMode = "strict"
+reportMissingTypeStubs = false
+reportUnknownMemberType = false
+reportUnknownVariableType = false
+reportUnknownArgumentType = false
+reportUnknownParameterType = false
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["backend/tests"]
+python_files = ["test_*.py"]
+addopts = ["-ra", "--strict-markers"]
+filterwarnings = ["ignore::DeprecationWarning:google.*"]
