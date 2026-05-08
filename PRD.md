@@ -5,12 +5,14 @@
 | Field | Value |
 |---|---|
 | Product name (working) | Svarsa AI |
-| Document version | 0.9 — Draft for review |
+| Document version | 0.95 — Draft for review (revised) |
 | Document owner | Founding team |
 | Status | In review |
-| Last updated | 2026-05-08 |
+| Last updated | 2026-05-09 |
 | Target launch (closed beta) | 2026-09 |
 | Target launch (GA) | 2026-12 |
+
+**Changelog v0.9 → v0.95:** (a) Removed unsourced market-research numbers from §2.1 and added a validation research plan (Appendix C). (b) Simplified backend architecture from seven services to a Realtime Bridge plus a single Application Backend; switched stack to Python-only with TypeScript frontend (was Python + Go). (c) Added explicit §8.9 multi-tenancy model and §8.10 hosting topology. (d) Updated §12 risk register with Hantverksdata partner-vs-build dynamics.
 
 ---
 
@@ -28,14 +30,15 @@ Pricing target is **1 495–2 995 SEK/mån** with a setup-avgift of 2–5 kSEK a
 
 Sole proprietors and small crews in the Swedish trades have a structural conflict: the work is done with hands, often in a customer's home, often in a noisy environment, often two-handed and dirty. The phone rings while they are in the middle of a soldered koppling, a 230V-anslutning, or a takpanna. They have three bad options: stop working (loses billable time), ignore the call (loses the lead), or answer with dirty hands while distracted (loses the quality of both interactions).
 
-Industry data and our discovery interviews (n=27 firms across Stockholm, Göteborg, Skellefteå, and Malmö, January–April 2026) converge on a few numbers:
+The following claims are our **working hypotheses**, not yet validated. They are based on conversations with hantverkare in our network, the founding team's prior industry exposure, and analogous research from US/UK trades segments that we believe is directionally applicable to Sweden. **Quantitative validation of each claim is the explicit deliverable of the discovery research plan in Appendix C, to be completed before Phase 1 pilot launch.** Anything quoted as a percentage or kSEK range below should be treated as hypothesis-grade until that work is complete.
 
-- **24–38%** of inbound calls go unanswered during weekday working hours
-- **62–80%** of calls outside 07–17 go unanswered
-- The typical converted **akut-jobb is worth 4–18 kSEK** (jourutryckning + work)
-- The typical converted **planned offert is worth 30–250 kSEK** (badrumsrenovering, värmepumpsinstallation, omdragning av el)
-- Owners self-report **40–90 minutes/day** spent on phone admin
-- When a customer doesn't reach a hantverkare, **~70%** call a competitor within 30 minutes — the lead is lost, not deferred
+- A meaningful fraction of inbound calls — we hypothesize roughly a quarter to a third — go unanswered during weekday working hours, because the owner is on a job site with hands occupied.
+- An even larger fraction of after-hours calls go unanswered, again because most 1–10 anställda firmor have no formal jourtelefon.
+- Captured akut-jobb (jourutryckning + work) and captured planned offert (badrumsrenovering, värmepumpsinstallation, omdragning av el) represent meaningful single-call value to the firma — small jobs in low single-digit kSEK, larger renoveringar in the tens to low hundreds of kSEK. Skatteverket's published ROT-statistik and SCB SNI-kod-baserad omsättningsdata are the public sources we will cross-reference for these magnitudes.
+- Owners spend a non-trivial portion of their day on phone admin — answering, returning missed calls, taking messages, coordinating with kontor. Discovery interviews will quantify this per-firma.
+- When a customer doesn't reach a hantverkare, a substantial share switch to a competitor relatively quickly rather than waiting for a callback. The exact rate is widely cited in marketing literature but the original primary source is murky and largely US-derived; we will not rely on a specific number until we measure it ourselves in the SE context.
+
+The economic logic of the product does not require precise values for any of these. It requires only that (a) missed-call rates are non-trivial, (b) typical job values are large enough that capturing one missed call per month covers the subscription several times over, and (c) owners feel time pressure on phone admin. Even conservative assumptions on all three make the ROI math work; the validation work in Appendix C is to confirm we're not in a corner case.
 
 ### 2.2 Why now
 
@@ -321,47 +324,82 @@ The AI is explicitly trained never to invent prices. This is a hard-coded behavi
 
 ### 8.1 High-level architecture
 
-The system is a real-time audio bridge between a Swedish PSTN endpoint (the caller's phone) and Google's Gemini 3.1 Flash Live model, with a function-calling layer that orchestrates business logic against the firm's CRM, calendar, and SMS systems. Each call spawns a stateful session with three concurrent, long-lived bidirectional channels:
+The system is a real-time audio bridge between a Swedish PSTN endpoint (the caller's phone) and Google's Gemini 3.1 Flash Live model, with a function-calling layer that orchestrates business logic against the firm's CRM, calendar, and SMS systems. The platform is **shared multi-tenant**: a single deployment serves all customer firmor, with logical isolation enforced rigorously at the data layer (see §8.9).
+
+The backend is built around **two services and a worker pool, written in Python (3.13+) with FastAPI and asyncio**, deployed to Google Cloud Run in EU regions. The frontend is TypeScript (Next.js for web, React Native for mobile). We deliberately avoid a polyglot backend at this stage; a single language meaningfully reduces hiring cost, code-review overhead, shared-library duplication, and deploy complexity for a small team. Splitting into microservices is a deferred decision that becomes appropriate around 30+ MSEK ARR; doing it earlier is premature optimization.
+
+The decomposition into a separate Realtime Bridge is *not* premature — it earns its keep operationally because long-lived audio sessions and request-response work have fundamentally different latency, deploy-safety, and scaling profiles. Keeping them in one process means every Application Backend deploy risks dropping live calls, which is unacceptable.
 
 ```
                                                   ┌──────────────────────┐
                                                   │ Gemini 3.1 Flash     │
                                                   │ Live API             │
-                                                  │ (WebSocket, EU)      │
+                                                  │ Vertex AI EU         │
+                                                  │ (europe-west4)       │
                                                   └──────────▲───────────┘
                                                              │
-                                                       PCM 16kHz in
-                                                       PCM 24kHz out
-                                                       JSON tool calls
+                                                       PCM 16 kHz in
+                                                       PCM 24 kHz out
+                                                       Function-call JSON
                                                              │
-┌──────────┐   PSTN   ┌──────────────┐   WebSocket   ┌──────▼──────────┐
-│  Caller  │◄────────►│ 46elks (SE)  │◄─────────────►│ Svarsa Realtime │
-│  (Inger) │  G.711   │ or Twilio    │ G.711 μ-law   │ Bridge          │
-└──────────┘  μ-law   │              │ 8kHz mono     │ (Cloud Run, EU) │
-              8kHz    └──────────────┘  base64       │                 │
-                                                     │  - audio xcode  │
-                                                     │  - VAD bridge   │
-                                                     │  - tool router  │
-                                                     │  - barge-in     │
-                                                     │  - rec & redact │
-                                                     └──────┬──────────┘
+┌──────────┐  PSTN   ┌──────────────┐  WebSocket   ┌────────▼──────────┐
+│ Caller   │◄───────►│ 46elks (SE)  │◄────────────►│ Realtime Bridge   │
+│ (Inger)  │ G.711   │ or Twilio    │ G.711 μ-law  │ Python + FastAPI  │
+└──────────┘ μ-law   │              │ 8 kHz mono   │ Cloud Run, EU     │
+             8 kHz   └──────────────┘ base64       │ min-instances ≥ 2 │
+                                                   │                   │
+                                                   │ • audio transcode │
+                                                   │ • Gemini WS proxy │
+                                                   │ • barge-in flush  │
+                                                   │ • session resume  │
+                                                   │ • tool-call relay │
+                                                   └────────┬──────────┘
                                                             │
-                                                            │ HTTPS / OAuth
+                                                            │ HTTPS, mTLS, tenant-scoped JWT
                                                             ▼
-                                       ┌─────────────────────────────────────────┐
-                                       │ Business Logic Services                 │
-                                       │  - Customer service (Postgres)          │
-                                       │  - Booking service                      │
-                                       │  - Escalation orchestrator              │
-                                       │  - Notification (SMS/email)             │
-                                       └────────────────┬────────────────────────┘
-                                                        │
-            ┌──────────────┬──────────────┬─────────────┼────────────┬─────────────┐
-            ▼              ▼              ▼             ▼            ▼             ▼
-        Fortnox       Hantverksdata   Visma         Google       46elks SMS    Bolagsverket
-        OAuth API     Next API        eEkonomi      Calendar     API           lookup
-                                      API           OAuth
+                                ┌─────────────────────────────────────────────────┐
+                                │ Application Backend                             │
+                                │ Python + FastAPI, Cloud Run, EU                 │
+                                │                                                 │
+                                │ Modules (single codebase, bounded contexts):    │
+                                │  • Tool handlers (lookup, book, escalate, …)    │
+                                │  • Customer / Job / Booking domain              │
+                                │  • Integration adapters (OAuth, sync)           │
+                                │  • Notifications (SMS, email, push)             │
+                                │  • Owner-app REST + WebSocket API               │
+                                │  • Admin / billing                              │
+                                └────────┬──────────────┬──────────────┬──────────┘
+                                         │              │              │
+                                         ▼              ▼              ▼
+                                  ┌────────────┐ ┌────────────┐ ┌────────────┐
+                                  │ Postgres   │ │ Redis      │ │ GCS        │
+                                  │ Cloud SQL  │ │ Memorystore│ │ per-tenant │
+                                  │ EU primary │ │ EU         │ │ buckets,   │
+                                  │ + replica  │ │            │ │ CMEK       │
+                                  └────────────┘ └────────────┘ └────────────┘
+                                         ▲
+                                         │
+                                ┌────────┴───────────┐
+                                │ Worker pool        │
+                                │ Same Python code,  │
+                                │ Cloud Run Jobs +   │
+                                │ Cloud Tasks queues │
+                                │                    │
+                                │ • Transcription    │
+                                │ • Integration sync │
+                                │ • Digest reports   │
+                                │ • Retries          │
+                                └────────┬───────────┘
+                                         │ outbound
+       ┌─────────────┬─────────────┬─────┴───────┬─────────────┬─────────────┐
+       ▼             ▼             ▼             ▼             ▼             ▼
+   Fortnox      Hantverksdata   Visma        Google /      46elks SMS    Bolagsverket
+   OAuth API    Next API        eEkonomi     Outlook 365   API           public lookup
+   (public)     (partner-       (public)     Calendar
+                gated)
 ```
+
+The arrow into the Realtime Bridge from Gemini and the arrow out to the Application Backend together carry every action the AI takes: caller speaks → Gemini emits a function call → Bridge forwards over HTTPS to Application Backend → Application Backend executes against Postgres and the relevant integration → result returns to the Bridge → Bridge sends back to Gemini → Gemini speaks the response. Every hop logs to a per-call trace tagged with `firma_id` and `call_id` for debugging and eval.
 
 ### 8.2 Telephony integration
 
@@ -720,39 +758,80 @@ Returns: `{eligible: bool, max_deduction_sek_estimate, caveats_sv}`.
 
 ### 8.5 Backend services
 
-The Realtime Bridge is one of several services. The full service map:
+The backend is intentionally minimal: **two services and a worker pool**, all Python 3.13+, all sharing one codebase organized by bounded context. The boundary that matters — and the only one we draw at this stage — is between the Realtime Bridge (long-lived audio sessions, latency-sensitive, deploys rarely) and the Application Backend (request-response work, deploys frequently, scales differently). Drawing additional service boundaries before they're forced by team size or scale is premature optimization.
 
-- **Realtime Bridge** (Python 3.13 + FastAPI + asyncio) — runs on Cloud Run with min-instances=2 per region for warm starts; co-located in `europe-west4` (Netherlands) and `europe-north1` (Finland) for SE proximity. Each call holds two open WebSockets (telephony + Gemini) for the call's duration.
-- **Tool Service** (Go) — implements all function-call handlers. Stateless, horizontally scalable, p95 latency budget 200 ms per tool invocation. Aggressive Redis caching of customer lookups, calendar windows, bolagsverket data.
-- **Integration Service** (Go) — long-poll-style sync with Fortnox, Hantverksdata, Visma. Owns OAuth-token-rotation, idempotency keys, conflict resolution. Decouples real-time path from third-party flakiness.
-- **Notification Service** (Go) — SMS via 46elks, email via Postmark (EU region), push via APNS/FCM.
-- **Recording Service** (Python) — receives audio from Realtime Bridge, encodes to MP3, applies opt-in PII redaction (whisper diarization → flag any `personnummer`-like 10-digit sequences for masking), stores in GCS `europe-west4` with 7-day default TTL configurable to 90.
-- **Owner App API** (Python + FastAPI) — REST + WebSocket for real-time inbox updates.
-- **Owner Web App** (Next.js, hosted on Vercel EU) — and **Owner Mobile** (React Native).
-- **Admin / Internal** — Grafana, Sentry (EU), per-firma cost dashboards, eval pipelines.
+#### 8.5.1 Realtime Bridge
+
+A focused, intentionally thin service whose only job is to broker audio between the telephony provider and Gemini Live. It holds the WebSocket to 46elks/Twilio, holds the WebSocket to Gemini Live, transcodes audio (μ-law 8 kHz ↔ PCM 16/24 kHz), manages session resumption across the ~10-minute Gemini connection limit, handles barge-in by flushing the playback queue within 100 ms, and relays Gemini's function-call requests to the Application Backend over HTTPS. It is deliberately stateless except for in-flight call state held in memory for the duration of each call.
+
+Runs on **Cloud Run with min-instances ≥ 2** in `europe-west4`, configured for long request timeouts (60 minutes) to match WebSocket lifetimes. Each instance comfortably handles ~50 concurrent calls; we scale horizontally as concurrency grows. Co-located in the same region as the Vertex AI Gemini Live endpoint so the Bridge↔Gemini WebSocket has sub-10 ms RTT.
+
+The Bridge is the part of the system that, if it fails, drops live calls — so it changes infrequently (target: weekly deploys at most, in low-traffic windows, with traffic-splitting canaries 5% → 25% → 100% over 30 minutes). Per-call observability is mandatory; every active call has a structured trace.
+
+#### 8.5.2 Application Backend
+
+A single Python+FastAPI service containing everything that isn't real-time audio:
+
+- **Tool handlers** — implementations of the function-calling catalog (§8.4). Called over HTTPS by the Realtime Bridge during calls; p95 latency budget 200 ms per tool, achieved via aggressive Redis caching of customer lookups, calendar windows, and Bolagsverket data.
+- **Domain logic** — Customer, Job, Booking, Escalation, Call, Note, Photo. Standard CRUD plus business rules (eskaleringskedja evaluation, slot availability, ROT-eligibility).
+- **Integration adapters** — Fortnox, Hantverksdata Next, Visma eEkonomi, Google Calendar, Outlook 365. OAuth flows, token rotation, idempotency keys, conflict resolution, polling deltas where webhooks are unavailable.
+- **Notifications** — SMS via 46elks, transactional email via Postmark EU, push via APNS/FCM.
+- **Owner-app API** — REST endpoints plus a WebSocket endpoint for real-time inbox updates pushed to the dashboard.
+- **Admin and billing** — internal endpoints, plan management, usage metering, Stripe integration.
+
+The codebase is organized by bounded context (`/customers`, `/calls`, `/bookings`, `/integrations`, `/notifications`, `/billing`, `/admin`) with a strict rule that cross-context calls go through public interfaces, not direct repository access. This keeps the future-microservices door open without paying the cost today.
+
+Runs on **Cloud Run with min-instances=1** and autoscales on request rate. Scales to zero out of hours if traffic genuinely allows; in practice min-instances=2–4 during business hours via scheduled config.
+
+#### 8.5.3 Worker pool
+
+Same Python codebase as the Application Backend, deployed as **Cloud Run Jobs** triggered by **Cloud Scheduler** for periodic work (integration sync, weekly digests, retention cleanup) and **Cloud Tasks queues** for fire-and-forget async work (post-call transcription pipeline, SMS dispatch retries, escalation chain advancement). The same domain code runs in both contexts; only the entry point differs.
+
+The transcription/PII-redaction pipeline (Whisper diarization → personnummer-pattern detection → MP3 encode → write to per-tenant GCS bucket → emit `recording.ready` event) is the most resource-intensive worker job and is the one most likely to be extracted to its own service later.
+
+#### 8.5.4 Supporting infrastructure
+
+- **Postgres** (Cloud SQL, EU): single primary plus read replica. Start at db-custom-2-8, scale up well before saturation. Row-level security policies on tenant-scoped tables as defence-in-depth (see §8.9).
+- **Redis** (Memorystore, EU): hot-path caching, session-affinity helpers, Cloud Tasks-style queues where Cloud Tasks itself is overkill.
+- **GCS** (EU, per-tenant buckets): call recordings and transcripts. Per-tenant CMEK keys via Cloud KMS.
+- **Secret Manager** (EU): platform-level secrets. Per-tenant OAuth tokens are stored in Postgres encrypted with per-tenant DEKs wrapped by a master KEK in KMS — not in Secret Manager, which doesn't scale to per-tenant secrets cleanly.
+- **Frontend** — **Next.js** web app on Vercel EU, **React Native** mobile on Expo EAS. Both consume the Application Backend's REST/WebSocket API.
+- **Observability** — Sentry (EU) for errors, Google Cloud Logging for structured logs, Google Cloud Monitoring for metrics and alerts. Resist Datadog/New Relic at this stage; GCP-native is sufficient until ~30 MSEK ARR.
+
+
 
 ### 8.6 Data model (simplified)
 
+Every tenant-scoped table carries `firma_id` as a non-nullable foreign key to `Firma`. This is enforced at the schema level and additionally by Postgres row-level security policies tied to the application's connection-time `SET app.firma_id = ...` directive. The repository layer rejects any query that doesn't carry an explicit `firma_id` filter; this is enforced by linting and test, not human discipline.
+
 ```
-Firma (id, name, org_number, trade, plan, settings_json)
-  ├── PhoneNumber (id, e164, provider, status)
-  ├── User (id, role, phone, email)
-  ├── EscalationChain (id, intent, schedule_cron, steps_json)
-  ├── Voice (firma_id, persona_prompt, voice_id, sample_audio_url)
-  └── Integration (id, type, oauth_tokens_encrypted, sync_state)
+Firma (id, name, org_number, trade, plan, settings_json, created_at)
+  ├── PhoneNumber       (id, firma_id, e164, provider, status)
+  ├── User              (id, firma_id, role, phone, email, auth_id)
+  ├── EscalationChain   (id, firma_id, intent, schedule_cron, steps_json)
+  ├── Voice             (firma_id, persona_prompt, voice_id, sample_audio_url)
+  └── Integration       (id, firma_id, type, oauth_tokens_encrypted, sync_state)
 
 Customer (id, firma_id, type, name, phone, email, org_number, address, source)
-  ├── Job (id, status, intent, summary, value_sek, tech_id, scheduled_for)
-  ├── Note (id, body, created_by, created_at)
-  └── Photo (id, url, expires_at)
+  ├── Job   (id, firma_id, customer_id, status, intent, summary, value_sek,
+  │          tech_id, scheduled_for)
+  ├── Note  (id, firma_id, customer_id, body, created_by, created_at)
+  └── Photo (id, firma_id, customer_id, url, expires_at)
 
 Call (id, firma_id, customer_id, started_at, ended_at, intent, severity,
-      recording_url, transcript_url, structured_summary_json, gemini_session_id,
-      tool_invocations_json, billing_seconds)
-  └── ToolInvocation (id, name, args_json, result_json, latency_ms, error)
+      recording_gcs_uri, transcript_gcs_uri, structured_summary_json,
+      gemini_session_id, tool_invocations_json, billing_seconds)
+  └── ToolInvocation (id, firma_id, call_id, name, args_json, result_json,
+                      latency_ms, error)
 
-Escalation (id, call_id, severity, reason, contacted_user_ids, status, ack_at)
+Escalation (id, firma_id, call_id, severity, reason, contacted_user_ids,
+            status, ack_at)
+
+AuditLog (id, firma_id, actor_user_id, action, target_type, target_id,
+          payload_json, created_at)
 ```
+
+`firma_id` appears on every row of every tenant-scoped table — including `ToolInvocation`, where the redundancy with `call_id → firma_id` is intentional. This makes leak-detection queries trivial ("find any row where the row's `firma_id` doesn't match the parent row's `firma_id`") and makes erasure operations (Art. 17) a matter of `DELETE WHERE firma_id = ?` cascading through foreign keys.
 
 ### 8.7 Integrations
 
@@ -788,10 +867,57 @@ API for SMS, MMS, voice, number management. We own the integration deeply: SMS s
 | Service availability | 99,9% monthly (target), with 99,5% SLA in customer agreement |
 | Concurrent calls per firma | 5 (Starter) / 25 (Pro) / unlimited (Enterprise) |
 | System concurrent calls (platform-wide) | 1 000 at launch, scaling to 10 000 by month 12 |
-| Recording storage | EU only (GCS europe-west4), encrypted at rest (CMEK), TTL configurable 7–365 days |
+| Recording storage | EU only (per-tenant GCS bucket, europe-west4), encrypted at rest (CMEK), TTL configurable 7–365 days |
 | Transcript storage | Same as recording, additionally indexed for in-app search |
 | RTO / RPO | RTO 30 min, RPO 5 min for firma config and customer data; recordings tolerate 1h RPO |
 | Logging / audit | All tool invocations logged with full args/results for 90 days, accessible to owner |
+
+### 8.9 Multi-tenancy and tenant isolation
+
+The platform is **shared multi-tenant**: a single deployment serves all customer firmor. Per-customer dedicated infrastructure is rejected as the wrong model at this stage — it costs roughly 10–20× more in infra and ops, makes config changes require N deployments, and doesn't earn its keep until you have enterprise customers with explicit isolation requirements that hantverkare don't have and won't pay for.
+
+Isolation is therefore **logical, not physical**, enforced rigorously at the data layer:
+
+**Tenant context is mandatory on every request.** Every authenticated request to the Application Backend resolves to exactly one `firma_id`, set as a connection-level Postgres variable (`SET app.firma_id = ...`) before any query runs. The repository layer rejects any query that doesn't carry an explicit `firma_id` filter; this is enforced by automated linting (custom rule in our query-builder) and a test class that runs against every repository method to confirm behavior under wrong-tenant credentials.
+
+**Postgres row-level security as defence-in-depth.** Every tenant-scoped table has an RLS policy `firma_id = current_setting('app.firma_id')::uuid`. The application connects with a low-privilege role that cannot bypass RLS. This is belt-and-braces — a bug in the application layer that misses a `firma_id` filter still cannot leak data, because Postgres itself refuses.
+
+**Cache keys are tenant-prefixed.** Every Redis key includes `firma_id` as the first segment (`firma:{firma_id}:customer:{customer_id}`). Keys without that prefix go in a tenant-agnostic namespace (rate limits, feature flags) and are explicitly approved in code review.
+
+**External API calls use tenant-scoped credentials.** When the Application Backend calls Fortnox or Hantverksdata for a given call, it loads that firma's OAuth tokens and uses them. Platform-level credentials masquerading as a tenant are explicitly forbidden by the integration adapter design.
+
+**Recordings and transcripts use per-tenant GCS buckets.** This is the one place where we trade pure shared-infrastructure economics for blast-radius reduction. Each firma gets its own bucket (`svarsa-recordings-{firma_id}-eu`) with a per-tenant CMEK key in Cloud KMS. The cost overhead is trivial (bucket-level metadata is essentially free) but the failure mode if a credential leaks is dramatically smaller, and it makes the customer-facing DPA story materially cleaner. Recordings contain the most sensitive data in the system (recorded customer voices, addresses, occasionally accidental personnummer despite the system prompt) and warrant the extra isolation.
+
+**Audit log is tenant-scoped and immutable.** Every action affecting a tenant's data is logged to an append-only `AuditLog` table partitioned by `firma_id`, accessible to the firma via the dashboard.
+
+**Tenant erasure is a single operation.** Right-to-be-forgotten requests (Art. 17) execute as a transactional `DELETE WHERE firma_id = ?` cascading through foreign keys, plus a delete of the per-tenant GCS bucket. Documented as a runbook, tested in staging, achievable within 30 days as required by GDPR.
+
+### 8.10 Hosting topology
+
+**Cloud provider: Google Cloud Platform, EU regions only.** Vertex AI for Gemini Live has the lowest latency from `europe-west4` (Netherlands) to Swedish customers, and the data-residency story is straightforward. We considered AWS Frankfurt and Azure Sweden Central; both are viable but Vertex AI Gemini Live is the binding constraint and is GCP-native.
+
+**Primary region: `europe-west4` (Netherlands).** Lowest-latency Vertex AI endpoint for Sweden, mature region with all needed services. **Secondary region: `europe-north1` (Finland).** Failover and cold-disaster-recovery target; not active-active at launch.
+
+**Service deployment:**
+
+| Component | Platform | Min instances | Scaling | Notes |
+|---|---|---|---|---|
+| Realtime Bridge | Cloud Run | ≥ 2 | Horizontal on concurrent calls | Long request timeout (60 min); regional pinning to avoid cross-region WebSocket hops |
+| Application Backend | Cloud Run | 1 (off-hours), 2–4 (business hours) | Horizontal on request rate | Standard FastAPI; autoscale aggressive |
+| Worker pool | Cloud Run Jobs + Cloud Tasks | 0 idle | On-demand | Same Python codebase, different entrypoints |
+| Postgres | Cloud SQL | n/a | Vertical until needed | Start db-custom-2-8, replica from day one |
+| Redis | Memorystore | n/a | Vertical | Single small instance suffices for years |
+| GCS | Per-tenant buckets | n/a | n/a | EU only, CMEK |
+| Frontend (web) | Vercel EU edge | n/a | n/a | Next.js |
+| Frontend (mobile) | Expo EAS + APNS/FCM | n/a | n/a | React Native |
+
+**Network and security posture.** All inter-service traffic over private VPC networking with mTLS; the Realtime Bridge calls the Application Backend over an internal VPC connector, not the public internet. External webhooks (46elks, Twilio, OAuth callbacks) terminate at a Cloud Armor-protected ingress with WAF rules and per-tenant rate limits. Secrets in Google Secret Manager (platform-level) and per-tenant DEK-wrapped tokens in Postgres (tenant-level). KMS keys are CMEK in `europe-west4`.
+
+**Deployment discipline.** Application Backend deploys hourly during business hours via GitHub Actions → Cloud Build → Cloud Run, with no impact on active calls because tool calls are short HTTPS round-trips that retry transparently if a backend pod is rotating. Realtime Bridge deploys weekly (Sunday 04:00 CET) with traffic-splitting canaries (5% → 25% → 100% over 30 minutes) and rollback gated on p95 audio latency and error rate. Database migrations are forward-only, two-phase (deploy code that tolerates both schemas → migrate → deploy code that uses new schema only).
+
+**Failure isolation.** A Realtime Bridge pod crashing kills the calls it was hosting (typically 10–50 concurrent calls); affected callers get a busy tone and we expect them to redial. We do *not* attempt to migrate active call state to another pod — distributed audio session state is hard, the failure mode is rare with min-instances ≥ 2, and graceful redial is acceptable. Application Backend pod crashes are invisible to callers (Bridge retries) and to dashboard users (frontend reconnects).
+
+**Observability.** Per-call structured traces tagged with `firma_id`, `call_id`, and `gemini_session_id`. The trace covers ingress (46elks event), Bridge processing (audio frames in/out, transcoding latency, Gemini WebSocket events), every tool call (name, args hash, latency, result status), and call end (recording write, transcript publish). Aggregated metrics: p50/p95/p99 audio latency, calls/minute, function-call latency by tool, error rate by integration.
 
 ## 9. GDPR and compliance
 
@@ -861,10 +987,12 @@ At Starter (200 samtal × 2,1 = 420 SEK COGS, 1 495 SEK ARR), gross margin ~72%.
 
 ### 11.1 Phase 0: Foundations (June 2026)
 
+- **Validation research completed** (Appendix C): 30+ hantverker-interviews, 5+ bokföringsbyrå conversations, 1+ Hantverksdata meeting. Demand hypothesis confirmed or pivoted before build investment escalates.
 - Hantverksdata Next partner-avtal initierat (kritisk path, 2–4 mån)
 - Legal: DPA-mall, sub-processor-avtal, F-skatt och bolagsregistrering klar
 - Eval-dataset: 500 inspelade VVS-samtal med samtycke från 5 pilotkunder
 - Infrastruktur: GCP `europe-west4` projekt, Cloud Run base setup, secrets, observability
+- Hiring: 1 senior backend engineer (Python+FastAPI, voice/realtime experience), 1 founding designer/PM
 
 ### 11.2 Phase 1: Closed beta (July–September 2026)
 
@@ -902,15 +1030,19 @@ At Starter (200 samtal × 2,1 = 420 SEK COGS, 1 495 SEK ARR), gross margin ~72%.
 
 | Risk | Impact | Probability | Mitigation |
 |---|---|---|---|
-| Gemini 3.1 Flash Live remains in preview at GA, with rate-limit unpredictability | High | Medium | Vertex Enterprise contract with reserved capacity; fallback path to Gemini 2.5 Native Audio; abstract the LLM provider in the bridge so we can swap to OpenAI Realtime if needed |
-| Hantverksdata partneravtal försenas eller nekas | High | Medium | Parallel-spår med Fortnox och Visma + generic Zapier-webhook fallback; ingen single-vendor blocker for launch |
+| Gemini 3.1 Flash Live remains in preview at GA, with rate-limit unpredictability | High | Medium | Vertex Enterprise contract with reserved capacity; fallback path to Gemini 2.5 Native Audio; abstract the LLM provider in the Realtime Bridge so we can swap to OpenAI Realtime if needed |
+| Hantverksdata partneravtal försenas eller nekas | High | Medium | Parallel-spår med Fortnox och Visma + generic webhook/Zapier fallback; no single-vendor blocker for launch |
+| **Hantverksdata partners with a competitor instead of us** | **High** | **Medium** | **Start partnership conversation in Phase 0 with concrete demo and customer-pull narrative; build customer base in Hantverksdata-using VVS-segment first to create inbound pressure on them; track their job postings monthly for "build" vs "partner" signal** |
+| **Hantverksdata or Fortnox builds a competing AI receptionist in-house** | **High** | **Low–Medium** | **Constellation/Volaris ownership of Hantverksdata makes greenfield build unlikely (Constellation playbook is buy-not-build); for Fortnox, monitor product roadmap signals; speed of execution is the only real defence** |
 | Triage-fel skapar PR-incident (AI sade ej akut, kund hade vattenskada) | Catastrophic | Low | Bias toward escalation; weekly eval; firma-konfigurerbara regler; tydlig SLA-disclaimer i avtalet; insurance coverage |
-| GDPR-incident (recording läcker, fel data residency) | Catastrophic | Low | Strict EU-only deployment; CMEK; pen-test pre-GA; bug bounty; insurance |
+| GDPR-incident (recording läcker, fel data residency, cross-tenant leak) | Catastrophic | Low | Strict EU-only deployment; per-tenant GCS buckets with CMEK; Postgres RLS as defence-in-depth; pen-test pre-GA; bug bounty; insurance |
 | Caller-experience är "creepy AI" | High | Medium | Tonality eval i fokusgrupper; tydlig disclosure; barge-in working; smooth handoff to human alltid available |
 | Twilio/46elks-avbrott (telephony down) | High | Low | Multi-provider failover; status page; under SLA påverkas inte (force majeure) |
+| **Demand hypothesis is wrong (missed-call rates lower than assumed, or hantverkare don't perceive the problem)** | **High** | **Low–Medium** | **Validation research per Appendix C must complete before Phase 1 commits; willingness-to-pay confirmed in 30+ interviews before build investment escalates** |
 | Hantverkare-segmentet köper inte SaaS i förväntad takt | Medium | Medium | Channel sales via grossister/branschorg; reseller-marginaler; pilot-discount |
-| Konkurrent (Goodcall/Synthflow) Swedish-isar och kommer först | Medium | Medium | Fokus på trade-vertikalintegrationer som moat; varumärke som "av oss för oss" |
+| Konkurrent (Goodcall/Synthflow/Bland) Swedish-isar och kommer först | Medium | Medium | Fokus på trade-vertikalintegrationer som moat; varumärke som "av oss för oss"; partnership-led distribution that horizontal players can't easily replicate |
 | Caller speaks dialect AI doesn't understand | Medium | Medium | Eval på 100+ dialekter; explicit "kan du upprepa"-fallback; eskalering vid n misslyckade förståelser |
+| Premature scaling of architecture (microservices before they're earned) | Medium | Medium | Explicit two-service-plus-workers ceiling until 30+ MSEK ARR; bounded-context modules in monolith preserve future split optionality |
 
 ## 13. Open questions
 
@@ -985,6 +1117,60 @@ och en vänlig hälsning.
 
 This sits within the 1 200 ms p50 / 2 000 ms p95 NFR target. Function-call turns add 150–300 ms when a tool is invoked; the AI is system-prompted to emit a "ett ögonblick"-filler in those cases.
 
+## 16. Appendix C — Phase 0 validation research plan
+
+The market claims in §2.1 are working hypotheses, not validated facts. This appendix specifies the research that converts them to evidence (or kills them) before Phase 1 build investment escalates. Total budget: ~6 weeks elapsed, 60–80 kSEK out-of-pocket.
+
+### 16.1 What we need to learn (and what would kill the project)
+
+| Hypothesis | Validation method | Green light | Red light (reconsider) |
+|---|---|---|---|
+| Missed-call rate is materially high during work hours | 2-week call-tracking pilot, 10–15 firmor | ≥20% missed during 07–17 | <10% missed |
+| After-hours missed-call rate is even higher | Same pilot, evening/weekend window | ≥50% missed | <30% missed |
+| Owners feel acute pain about phone admin | 30 semi-structured interviews | ≥70% rate it 4–5 of 5 on pain scale | <40% rate it 4+ |
+| Captured akut-jobb has meaningful kSEK value | Skatteverket ROT data + interview self-report | Median akut-job ≥3 kSEK | Median <1 kSEK |
+| Owners would pay 1–3 kSEK/mån for this | Direct WTP question + price-sensitivity test | ≥40% say yes at 1 495 SEK | <20% say yes |
+| Bokföringsbyråer would refer clients | 5–8 conversations | ≥3 say "yes, on commission" | All say "we don't refer software" |
+| Hantverksdata is open to partnership | 1 meeting | "Let's talk in 3 months when you have customers" or warmer | "We're building this ourselves" |
+| Branschorganisationer will engage | 2 conversations (Installatörsföretagen, Säker Vatten) | Willingness to discuss medlemsförmån | Categorical no |
+
+### 16.2 Call-tracking pilot
+
+Recruit 10–15 friendly hantverkare (existing network + cold outreach) to forward their existing inbound number to a 46elks tracking number for 14 days. The tracking number rings their original phone for the same number of rings; if not answered, it logs the missed call with timestamp and CLI. Owner receives a daily SMS with the count and a weekly survey on outcome (called back? booked? lost?).
+
+Cost: ~3–5 kSEK in 46elks fees and a 500 SEK gift card per participant. Output: a real, Sweden-specific, trades-specific dataset of missed-call rates by time of day, day of week, and call disposition. Use this dataset to replace the placeholder claims in §2.1.
+
+### 16.3 Discovery interviews (n ≥ 30)
+
+Recruit through trade FB-grupper (VVS-firmor i Stockholm, Elektriker Sverige, etc.), branschorganisationer, and warm intros. Mix: 60% VVS, 25% el, 15% snickeri/övrigt. Mix of geographies (≥3 cities), ages, and firma sizes (1, 2–4, 5–10 anställda). Each interview 30 minutes, recorded with consent, structured around: current call-handling workflow, pain points, current tools, willingness-to-pay, decision criteria, deal-breakers. Code transcripts for themes; specifically extract willingness-to-pay numbers.
+
+The single most important question: *"Om jag säger att en AI-svarstjänst kan svara på alla dina samtal på svenska, boka jobb i din kalender, och eskalera akuta ärenden direkt till dig på SMS — vad skulle du vara villig att betala per månad?"* — followed by laddered probes (would you pay X? at X+200? at X-300?). This converts gut feeling about pricing into a real distribution.
+
+### 16.4 Channel partner conversations
+
+Five to eight bokföringsbyrå conversations, two branschorganisation meetings, one Hantverksdata meeting. The goal is not to sign deals — it is to learn whether the channel will engage at all, and at what commercial terms. Each conversation produces a written memo: their stated interest, their objections, what would change their mind, their decision-making process and timeline.
+
+A "yes, in principle, talk to me when you have 50 customers" from a bokföringsbyrå is a strong green light. A "we don't refer software, we just do bokföring" from all five is a serious red flag for the channel-led GTM thesis.
+
+### 16.5 Public data triangulation
+
+In parallel to primary research, extract publicly available data to cross-check:
+
+- **Skatteverket ROT-statistik** — annual reports include average ROT-deduktion per arbete by typ av arbete. Multiply by typical ROT-share (~30–50% of arbetskostnad) to estimate average job sizes.
+- **SCB SNI-kod 43.21, 43.22, 43.39** — firma counts, anställda-distribution, omsättning-distribution for sizing TAM precisely.
+- **Bolagsverket** — active company counts.
+- **Installatörsföretagen and Byggföretagen annual reports** — branch-level statistics.
+
+### 16.6 Output and gating
+
+Phase 0 ends with a written **validation memo** answering each hypothesis above with evidence. The memo is reviewed by founders + 2–3 advisors before Phase 1 commits build resources. Possible outcomes:
+
+- **Green across most rows** → proceed to Phase 1 as planned.
+- **Yellow on willingness-to-pay or channel** → re-price or re-pitch before build, then proceed.
+- **Red on demand or Hantverksdata "we're building it"** → seriously reconsider scope, target segment, or whether to proceed at all.
+
+The discipline is: do not skip this gate, even if you feel confident. The cost of running it is small; the cost of building 6 months of product against a wrong hypothesis is large. The PRD as written assumes the validation passes — if it doesn't, large parts of this document need to be rewritten or the project killed before further investment.
+
 ---
 
-*End of document. Reviewed by: pending. Next review: pre-Phase 1 kickoff.*
+*End of document. Reviewed by: pending. Next review: pre-Phase 1 kickoff, after Appendix C validation memo is completed.*
