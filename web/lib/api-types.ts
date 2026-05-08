@@ -140,6 +140,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tools/dispatch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Dispatch Tool */
+        post: operations["dispatch_tool_api_tools_dispatch_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -267,6 +284,27 @@ export interface components {
          * @enum {string}
          */
         CustomerType: "private" | "company";
+        /** DispatchRequest */
+        DispatchRequest: {
+            /** Call Id */
+            call_id?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Args
+             * @default {}
+             */
+            args: {
+                [key: string]: unknown;
+            };
+        };
+        /** DispatchResponse */
+        DispatchResponse: {
+            /** Result */
+            result: {
+                [key: string]: unknown;
+            };
+        };
         /** FirmaRead */
         FirmaRead: {
             /** Id */
@@ -701,6 +739,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FirmaRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    dispatch_tool_api_tools_dispatch_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Firma-Id"?: string | null;
+                "X-Internal-Token"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DispatchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DispatchResponse"];
                 };
             };
             /** @description Validation Error */

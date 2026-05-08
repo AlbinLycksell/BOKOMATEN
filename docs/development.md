@@ -28,7 +28,7 @@ Add a `GEMINI_API_KEY` to `.env.local` (gitignored). `.env` is the committed tem
 
 Two terminals.
 
-**Backend:**
+**Backend (single-deployable mode):**
 
 ```bash
 cd backend
@@ -37,9 +37,26 @@ uv run uvicorn svarsa.app:create_app --factory --reload --port 8000
 # Health:     http://127.0.0.1:8000/health
 # Inbox WS:   ws://127.0.0.1:8000/ws/inbox/<firma_id>
 # Bridge WS:  ws://127.0.0.1:8000/ws/bridge/<firma_id>/<call_id>
+# Tool RPC:   POST http://127.0.0.1:8000/api/tools/dispatch
 ```
 
 The first run seeds Anderssons VVS AB with Inger, Karim, Pelle, three demo calls, and tool-invocation history (see `db/seed.py`).
+
+**Backend (prod-shape, two services):**
+
+```bash
+# Application Backend
+cd backend
+uv run uvicorn svarsa.app:create_app --factory --port 8000
+
+# Realtime Bridge — separate terminal, separate port
+SVARSA_TOOL_DISPATCH_MODE=http \
+SVARSA_APPLICATION_BACKEND_URL=http://127.0.0.1:8000 \
+SVARSA_BRIDGE_INTERNAL_TOKEN=dev-token \
+uv run uvicorn svarsa.bridge_app:create_bridge_app --factory --port 8001
+```
+
+This mirrors the production split where the two run as independent Cloud Run services with mTLS over a VPC connector.
 
 **Web:**
 
