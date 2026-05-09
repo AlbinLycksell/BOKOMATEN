@@ -9,6 +9,7 @@ export const Input = forwardRef<
   <input
     ref={ref}
     type={type}
+    suppressHydrationWarning
     className={cn(
       "h-10 w-full rounded-md border border-border bg-surface px-3 text-sm text-text",
       "placeholder:text-text-faint",

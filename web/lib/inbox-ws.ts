@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 
 import type { CallRead } from "./api-models";
+import { inboxWsUrl } from "./backend-url";
 
 type InboxEvent =
   | { event: "inbox.call.created"; payload: { id: string; started_at: string } }
@@ -13,13 +14,6 @@ interface UseInboxWebSocketOpts {
   onEvent: (msg: InboxEvent) => void;
 }
 
-const WS_URL = (firmaId: string) => {
-  if (typeof window === "undefined") return null;
-  const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
-  const host = process.env.NEXT_PUBLIC_BACKEND_WS ?? window.location.host;
-  return `${proto}//${host.replace(/^https?:\/\//, "")}/ws/inbox/${encodeURIComponent(firmaId)}`;
-};
-
 export function useInboxWebSocket({ firmaId, onEvent }: UseInboxWebSocketOpts) {
   const onEventRef = useRef(onEvent);
   useEffect(() => {
@@ -27,7 +21,8 @@ export function useInboxWebSocket({ firmaId, onEvent }: UseInboxWebSocketOpts) {
   }, [onEvent]);
 
   useEffect(() => {
-    const url = WS_URL(firmaId);
+    if (typeof window === "undefined") return;
+    const url = inboxWsUrl(firmaId);
     if (!url) return;
     let closed = false;
     let backoffMs = 1_000;

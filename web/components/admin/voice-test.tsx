@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { adminApi } from "@/lib/admin-api";
+import { bridgeWsUrl } from "@/lib/backend-url";
 
 const FIRMA_ID = "01J0000FIRM0ANDERSSONSVVS00";
 const PLAYBACK_RATE = 24_000; // matches Gemini Live audio output
@@ -158,11 +159,11 @@ export function VoiceTest() {
     const id = `test-${Date.now().toString(36)}`;
     setCallId(id);
 
-    const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const host = window.location.host;
-    const ws = new WebSocket(
-      `${proto}//${host}/ws/bridge/${encodeURIComponent(FIRMA_ID)}/${encodeURIComponent(id)}`,
-    );
+    const url = bridgeWsUrl(FIRMA_ID, id);
+    // Visible in the browser console so connection problems are obvious.
+    // eslint-disable-next-line no-console
+    console.info("[voice-test] opening", url);
+    const ws = new WebSocket(url);
     wsRef.current = ws;
     ws.binaryType = "arraybuffer";
 
