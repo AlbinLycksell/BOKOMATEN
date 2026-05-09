@@ -36,7 +36,7 @@ from switchboard.bridge.gemini_session import connect as connect_gemini
 from switchboard.bridge.usage_tracker import UsageTracker
 from switchboard.core.logging import get_logger
 from switchboard.core.tenant import firma_context
-from switchboard.core.time import utcnow
+from switchboard.core.time import to_utc_aware, utcnow
 from switchboard.db.session import get_engine
 from switchboard.models import Call, CallStatus, Firma, TranscriptRole, TranscriptSegment
 from switchboard.services import cost_service, recording_service, redaction_service
@@ -121,7 +121,9 @@ async def bridge(websocket: WebSocket, firma_id: str, call_id: str) -> None:
         finally:
             call.ended_at = utcnow()
             call.status = CallStatus.COMPLETED
-            call.billing_seconds = int((call.ended_at - call.started_at).total_seconds())
+            call.billing_seconds = int(
+                (call.ended_at - to_utc_aware(call.started_at)).total_seconds()
+            )
 
             consent_disabled = getattr(tool_client, "consent_disabled", False)
             if consent_disabled:

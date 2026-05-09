@@ -50,3 +50,12 @@ def pcm24k_to_mulaw(pcm24k: bytes) -> bytes:
 def chunk_mulaw_frames(mulaw: bytes, frame_size: int = MULAW_FRAME_BYTES) -> list[bytes]:
     """Split μ-law audio into provider-friendly 20ms frames."""
     return [mulaw[i : i + frame_size] for i in range(0, len(mulaw), frame_size)]
+
+
+def pcm24k_to_pcm16k(pcm24k: bytes) -> bytes:
+    """46elks (and the in-browser voice-test) → Gemini input rate.
+
+    Caller leg already arrives at 24 kHz from the pcm_24000-speaking
+    provider — we just need to downsample for Gemini Live's 16 kHz input.
+    """
+    return _resample_pcm16(pcm24k, GEMINI_OUT_RATE, GEMINI_IN_RATE)

@@ -26,12 +26,16 @@ router = APIRouter(prefix="/api/calls", tags=["calls"])
 
 
 def _to_read(call: Call, customer_name: str | None) -> CallRead:
+    from switchboard.core.time import to_utc_aware
+
     summary_short: str | None = None
     if call.summary:
         summary_short = call.summary.get("short_sv")
     duration = 0
     if call.ended_at and call.started_at:
-        duration = int((call.ended_at - call.started_at).total_seconds())
+        duration = int(
+            (to_utc_aware(call.ended_at) - to_utc_aware(call.started_at)).total_seconds()
+        )
     return CallRead(
         id=call.id,
         customer_id=call.customer_id,
