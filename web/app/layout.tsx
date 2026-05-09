@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 
-import "./globals.css";
 import { QueryProvider } from "@/lib/query-client";
+import "./globals.css";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -11,7 +11,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Switchboard AI",
+  title: "Switchboard",
   description: "Voice-first AI receptionist for Swedish hantverkare.",
 };
 

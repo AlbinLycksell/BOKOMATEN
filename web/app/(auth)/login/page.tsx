@@ -14,7 +14,7 @@ export default function LoginPage() {
             <div className="h-10 w-10 rounded-md bg-accent text-on-accent grid place-items-center font-semibold">
               S
             </div>
-            <span className="text-base font-semibold text-text-strong">Switchboard AI</span>
+            <span className="text-base font-semibold text-text-strong">Switchboard</span>
           </div>
           <p className="text-sm text-text-muted">
             Logga in för att se inkommande samtal och hantera bokningar.

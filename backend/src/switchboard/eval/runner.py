@@ -57,8 +57,8 @@ def run(dataset: list[LabeledCall]) -> EvalReport:
         report.by_intent[call.expected_intent.value] += 1
         actual = _classify(call)
         intent_match = actual.actual_intent == call.expected_intent
-        severity_match = (
-            actual.actual_severity == (call.expected_severity.value if call.expected_severity else None)
+        severity_match = actual.actual_severity == (
+            call.expected_severity.value if call.expected_severity else None
         )
         if intent_match:
             report.intent_correct += 1
@@ -73,7 +73,9 @@ def run(dataset: list[LabeledCall]) -> EvalReport:
 
 def _classify(call: LabeledCall) -> CallEvalResult:
     """Heuristic classifier — same rules the production triage service uses."""
-    caller_text = " ".join(t.text for t in call.transcript if t.role == "caller").lower()
+    caller_text = " ".join(
+        t.text for t in call.transcript if t.role == "caller"
+    ).lower()
     indicators: list[EmergencyIndicator] = []
     keywords = {
         "läcka": EmergencyIndicator.LACKA,
@@ -101,7 +103,10 @@ def _classify(call: LabeledCall) -> CallEvalResult:
     return CallEvalResult(
         call_id=call.call_id,
         intent_match=actual_intent == call.expected_intent,
-        severity_match=(triage.severity.value == (call.expected_severity.value if call.expected_severity else None)),
+        severity_match=(
+            triage.severity.value
+            == (call.expected_severity.value if call.expected_severity else None)
+        ),
         actual_intent=actual_intent,
         actual_severity=triage.severity.value,
     )
@@ -109,7 +114,7 @@ def _classify(call: LabeledCall) -> CallEvalResult:
 
 def format_slack_digest(report: EvalReport) -> str:
     lines = [
-        f"*Switchboard AI eval — n={report.total}*",
+        f"*Switchboard eval — n={report.total}*",
         f"  Intent accuracy: {report.intent_accuracy:.1%}",
         f"  Severity accuracy: {report.severity_accuracy:.1%}",
         f"  Emergency false negatives: {report.emergency_false_negatives}/{report.by_intent.get('akut', 0)}",
@@ -121,5 +126,7 @@ def format_slack_digest(report: EvalReport) -> str:
     if report.failures:
         lines.append(f"\nFailures ({len(report.failures)}, first 5):")
         for f in report.failures[:5]:
-            lines.append(f"  • {f.call_id}: intent={f.actual_intent}, severity={f.actual_severity}")
+            lines.append(
+                f"  • {f.call_id}: intent={f.actual_intent}, severity={f.actual_severity}"
+            )
     return "\n".join(lines)
