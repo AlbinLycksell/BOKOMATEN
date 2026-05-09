@@ -64,6 +64,14 @@ async def bridge(websocket: WebSocket, firma_id: str, call_id: str) -> None:
         db.commit()
         db.refresh(call)
 
+        from svarsa.api.ws_inbox import publish
+
+        await publish(
+            firma_id,
+            "inbox.call.created",
+            {"id": call.id, "started_at": call.started_at.isoformat()},
+        )
+
         # Declare bidirectional PCM 24kHz immediately.
         await websocket.send_json({"t": "sending", "format": "pcm_24000"})
         await websocket.send_json({"t": "listening", "format": "pcm_24000"})
@@ -139,8 +147,21 @@ async def bridge(websocket: WebSocket, firma_id: str, call_id: str) -> None:
             if hasattr(tool_client, "aclose"):
                 await tool_client.aclose()  # type: ignore[no-untyped-call]
             from svarsa.agents.runner import schedule_post_call_summary
+            from svarsa.api.ws_inbox import publish
 
             schedule_post_call_summary(call.id)
+            await publish(
+                firma_id,
+                "inbox.call.updated",
+                {
+                    "id": call.id,
+                    "status": call.status.value,
+                    "intent": call.intent.value if call.intent else None,
+                    "severity": call.severity.value if call.severity else None,
+                    "duration_seconds": call.billing_seconds,
+                    "cost_total_sek": call.cost_total_sek,
+                },
+            )
             structlog.contextvars.unbind_contextvars("call_id")
 
 
