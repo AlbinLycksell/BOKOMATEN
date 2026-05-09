@@ -19,4 +19,8 @@ def _isolate_db() -> Iterator[None]:
     from svarsa.core.config import get_settings
 
     get_settings.cache_clear()
+    from svarsa.db import session as db_session
+
+    db_session.reset_engine()
+    db_session.init_db()
     yield

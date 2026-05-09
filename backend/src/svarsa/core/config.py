@@ -81,6 +81,8 @@ class Settings(BaseSettings):
     auth_jwks_url: str = ""
     auth_audience: str = "svarsa-backend"
     auth_issuer: str = "https://app.svarsa.se"
+    allowed_signup_domains: tuple[str, ...] = ()
+    bootstrap_internal_token: str = ""
 
     # ---- observability ----
     sentry_dsn: str = ""

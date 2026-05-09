@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from svarsa import __version__
 from svarsa.api import (
+    routes_auth,
     routes_calls,
     routes_customers,
     routes_firma,
@@ -61,6 +62,7 @@ def create_app() -> FastAPI:
         default_firma_id=DEMO_FIRMA_ID if settings.env == "dev" else None,
     )
     app.include_router(routes_health.router)
+    app.include_router(routes_auth.router)
     app.include_router(routes_calls.router)
     app.include_router(routes_customers.router)
     app.include_router(routes_firma.router)

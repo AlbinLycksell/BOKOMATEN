@@ -59,8 +59,10 @@ class User(SQLModel, table=True):
     role: str
     name: str
     phone: str | None = None
-    email: str | None = None
+    email: str | None = SQLField(default=None, index=True, unique=True)
     on_call: bool = False
+    google_sub: str | None = SQLField(default=None, index=True, unique=True)
+    last_login_at: datetime | None = None
     created_at: datetime = SQLField(default_factory=utcnow)
 
 

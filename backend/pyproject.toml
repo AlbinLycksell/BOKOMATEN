@@ -29,6 +29,7 @@ dependencies = [
     "google-cloud-secret-manager>=2.20",
     "pyjwt[crypto]>=2.10",
     "sentry-sdk[fastapi]>=2.20",
+    "email-validator>=2.2",
 ]
 
 [project.optional-dependencies]
