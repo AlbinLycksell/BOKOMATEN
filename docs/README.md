@@ -15,7 +15,10 @@ Voice-first AI receptionist for Swedish hantverkare. Built on Gemini 3.1 Flash L
 | Look up a tool the AI calls | [`tools.md`](./tools.md) |
 | Understand multi-tenant isolation | [`multi-tenancy.md`](./multi-tenancy.md) |
 | Understand the realtime call lifecycle | [`realtime-bridge.md`](./realtime-bridge.md) |
-| Stand up GCP from scratch | [`gcp-setup.md`](./gcp-setup.md) |
+| Set up your dev GCP project (OAuth, Gemini, optional Vertex) | [`gcp-setup-dev.md`](./gcp-setup-dev.md) |
+| Stand up production GCP from scratch | [`gcp-setup.md`](./gcp-setup.md) |
+| Per-variable env reference (dev vs prod) | [`env-variables.md`](./env-variables.md) |
+| Where secrets live + how to rotate them | [`secrets-management.md`](./secrets-management.md) |
 | Deploy / rollback / observability | [`deployment.md`](./deployment.md) |
 | Auth model | [`auth.md`](./auth.md) |
 | Recording pipeline | [`recording.md`](./recording.md) |
