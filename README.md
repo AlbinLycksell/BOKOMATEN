@@ -1,4 +1,4 @@
-# Switchboard AI
+# Switchboard
 
 > Voice-first AI receptionist for Swedish hantverkare — VVS, el, snickeri. Answers calls 24/7 in natural Swedish, triages, books work directly into the firm's affärssystem, escalates emergencies in seconds.
 

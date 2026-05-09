@@ -1,7 +1,7 @@
 .PHONY: help install test typecheck build dev backend web openapi clean
 
 help:
-	@echo "Switchboard AI — common dev commands"
+	@echo "Switchboard — common dev commands"
 	@echo ""
 	@echo "  make install        Install backend + web dependencies"
 	@echo "  make test           Run backend tests"

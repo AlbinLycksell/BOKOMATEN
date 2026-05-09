@@ -1,10 +1,10 @@
-# PRD — Switchboard AI
+# PRD — Switchboard
 
 **Product Requirements Document**
 
 | Field | Value |
 |---|---|
-| Product name (working) | Switchboard AI |
+| Product name (working) | Switchboard |
 | Document version | 0.95 — Draft for review (revised) |
 | Document owner | Founding team |
 | Status | In review |
@@ -18,7 +18,7 @@
 
 ## 1. Executive summary
 
-Switchboard AI is a voice-first AI receptionist purpose-built for Swedish hantverkare — VVS-firmor, elektriker, snickare, plattsättare, and adjacent service trades — in the 1–10 anställda segment. It answers inbound phone calls 24/7 in natural Swedish using Google's **Gemini 3.1 Flash Live** model, triages each call in under 30 seconds, books work directly into the firm's existing calendar and affärssystem (Fortnox, Hantverksdata Next, Visma eEkonomi), and escalates true emergencies to the owner within 15 seconds via SMS and outbound call.
+Switchboard is a voice-first AI receptionist purpose-built for Swedish hantverkare — VVS-firmor, elektriker, snickare, plattsättare, and adjacent service trades — in the 1–10 anställda segment. It answers inbound phone calls 24/7 in natural Swedish using Google's **Gemini 3.1 Flash Live** model, triages each call in under 30 seconds, books work directly into the firm's existing calendar and affärssystem (Fortnox, Hantverksdata Next, Visma eEkonomi), and escalates true emergencies to the owner within 15 seconds via SMS and outbound call.
 
 The product is explicitly **additive, not replacement**: it integrates with the bokföring/CRM the firm already uses, plus a thin "call operations" web/mobile app for the owner to see what's happened, listen to recordings, and act on follow-ups. The wedge is the captured akut-jobb, the missed offert-förfrågan, and the ten-minute-per-call admin tax that the owner is paying today by stopping work to answer the phone on a job site.
 
@@ -128,7 +128,7 @@ Magnus owns Anderssons VVS AB in Bromma. Three anställda including himself, run
 
 ### 5.2 Lena, 44, kontor/administration (secondary user, "the back office")
 
-Magnus's sambo, runs the kontor 20 timmar/vecka. She's the actual user of Fortnox, Hantverksdata, and the kalender. Her relationship to Switchboard AI is: morning coffee, she opens the dashboard, sees the 11 calls handled overnight and during yesterday afternoon, triages the 3 that need follow-up, books the 2 that didn't quite resolve, and gets on with invoicing. She is not technical but is competent. If our product wastes her time or creates double-bookings, she will kill it.
+Magnus's sambo, runs the kontor 20 timmar/vecka. She's the actual user of Fortnox, Hantverksdata, and the kalender. Her relationship to Switchboard is: morning coffee, she opens the dashboard, sees the 11 calls handled overnight and during yesterday afternoon, triages the 3 that need follow-up, books the 2 that didn't quite resolve, and gets on with invoicing. She is not technical but is competent. If our product wastes her time or creates double-bookings, she will kill it.
 
 ### 5.3 Alex, 28, jourtekniker (tertiary user, "the on-call")
 
@@ -146,7 +146,7 @@ Manages 14 properties for a BRF. Calls Anderssons VVS to book OVK-besiktningar i
 
 ### 6.1 Inbound emergency call (akut)
 
-Inger calls at 14:32. The number rings 1,5 times and Switchboard AI picks up.
+Inger calls at 14:32. The number rings 1,5 times and Switchboard picks up.
 
 > **Switchboard:** "Hej, du har kommit till Anderssons VVS, jag är deras digitala assistent. Hur kan jag hjälpa dig?"
 >

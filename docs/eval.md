@@ -26,7 +26,7 @@ uv run run-eval eval/sample.jsonl --slack-webhook "$SLACK_WEBHOOK"
 GitHub Actions workflow `eval-weekly.yml` runs Sunday 06:00 UTC. Posts a summary to `#switchboard-eval`:
 
 ```
-*Switchboard AI eval — n=523*
+*Switchboard eval — n=523*
   Intent accuracy: 91.2%
   Severity accuracy: 88.7%
   Emergency false negatives: 0/47

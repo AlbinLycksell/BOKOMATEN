@@ -16,7 +16,7 @@ ORG_ID=...
 BILLING=...
 gcloud projects create switchboard-prod \
   --organization "$ORG_ID" \
-  --name "Switchboard AI Production"
+  --name "Switchboard Production"
 gcloud beta billing projects link switchboard-prod --billing-account "$BILLING"
 gcloud config set project switchboard-prod
 ```

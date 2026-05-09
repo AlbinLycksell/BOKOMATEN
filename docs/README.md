@@ -1,4 +1,4 @@
-# Switchboard AI — Engineering Docs
+# Switchboard — Engineering Docs
 
 Voice-first AI receptionist for Swedish hantverkare. Built on Gemini 3.1 Flash Live, EU-resident, GDPR-aware, trade-aware.
 
@@ -6,6 +6,7 @@ Voice-first AI receptionist for Swedish hantverkare. Built on Gemini 3.1 Flash L
 
 | When you want to… | Read |
 |---|---|
+| See exactly what's built and what's blocking launch | [`current-state.md`](./current-state.md) |
 | Understand the system at a glance | [`architecture.md`](./architecture.md) |
 | Get a dev environment running | [`development.md`](./development.md) |
 | Add or modify backend modules | [`backend.md`](./backend.md) |
@@ -21,10 +22,6 @@ Voice-first AI receptionist for Swedish hantverkare. Built on Gemini 3.1 Flash L
 | Integration setup (46elks, Fortnox, …) | [`integrations.md`](./integrations.md) |
 | Database migrations | [`migrations.md`](./migrations.md) |
 | Eval pipeline + per-tool SLO | [`eval.md`](./eval.md) |
-| See planned MVP work | [`superpowers/plans/2026-05-09-switchboard-mvp-foundation.md`](./superpowers/plans/2026-05-09-switchboard-mvp-foundation.md) |
-| See what's next + required inputs | [`superpowers/plans/2026-05-09-switchboard-next-steps.md`](./superpowers/plans/2026-05-09-switchboard-next-steps.md) |
-| Fill in the input form (founders) | [`superpowers/plans/2026-05-09-switchboard-input-form.md`](./superpowers/plans/2026-05-09-switchboard-input-form.md) |
-| Plan: launch readiness (current) | [`superpowers/plans/2026-05-09-switchboard-launch.md`](./superpowers/plans/2026-05-09-switchboard-launch.md) |
 | ADK reference | [`adk/llms-full.txt`](./adk/llms-full.txt) |
 
-The product spec is [`../PRD.md`](../PRD.md).
+The product spec is [`../PRD.md`](../PRD.md). The brand/design language is [`../design.md`](../design.md).
