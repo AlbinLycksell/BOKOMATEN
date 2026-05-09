@@ -2,7 +2,16 @@ import { type ButtonHTMLAttributes, forwardRef } from "react";
 
 import { cn } from "@/lib/utils";
 
-type Variant = "default" | "outline" | "ghost" | "critical" | "subtle";
+type Variant =
+  | "primary"
+  | "navy"
+  | "secondary"
+  | "ghost"
+  | "critical"
+  /** Legacy aliases — map onto Verkstad variants. Keep callers compiling. */
+  | "default"
+  | "outline"
+  | "subtle";
 type Size = "sm" | "md" | "lg" | "icon";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -11,34 +20,44 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const VARIANTS: Record<Variant, string> = {
-  default:
-    "bg-accent text-on-accent hover:bg-accent-hover border border-accent disabled:opacity-50",
-  outline:
-    "bg-surface text-text border border-border-strong hover:bg-surface-2 disabled:opacity-50",
+  primary:
+    "bg-signaloranje text-white border-signaloranje hover:bg-signaloranje-press hover:border-signaloranje-press",
+  navy:
+    "bg-havsbla text-linne border-havsbla hover:bg-havsbla-85 hover:border-havsbla-85",
+  secondary:
+    "bg-transparent text-havsbla border-havsbla hover:bg-havsbla hover:text-linne",
   ghost:
-    "bg-transparent text-text hover:bg-surface-2 border border-transparent disabled:opacity-50",
-  subtle:
-    "bg-accent-soft text-accent hover:bg-accent-soft-hover border border-transparent disabled:opacity-50",
+    "bg-transparent text-havsbla border-transparent hover:bg-linne-deep",
   critical:
-    "bg-critical text-white hover:opacity-90 border border-critical disabled:opacity-50",
+    "bg-larmrod text-white border-larmrod hover:opacity-90",
+  default:
+    "bg-signaloranje text-white border-signaloranje hover:bg-signaloranje-press hover:border-signaloranje-press",
+  outline:
+    "bg-transparent text-havsbla border-havsbla hover:bg-havsbla hover:text-linne",
+  subtle:
+    "bg-linne-deep text-havsbla border-transparent hover:bg-grey-100",
 };
 
 const SIZES: Record<Size, string> = {
-  sm: "h-8 px-3 text-sm",
-  md: "h-10 px-4 text-sm",
-  lg: "h-11 px-6 text-base",
-  icon: "h-9 w-9 p-0",
+  sm: "h-9 px-4 text-sm gap-1.5",
+  md: "h-12 px-6 text-base gap-2",
+  lg: "h-14 px-8 text-lg gap-2",
+  icon: "h-10 w-10 p-0",
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = "default", size = "md", type = "button", ...props }, ref) => (
+  (
+    { className, variant = "primary", size = "md", type = "button", ...props },
+    ref,
+  ) => (
     <button
       ref={ref}
       type={type}
       className={cn(
-        "inline-flex items-center justify-center gap-2 rounded-md font-medium transition-colors",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1",
-        "disabled:pointer-events-none",
+        "inline-flex items-center justify-center rounded-pill border font-medium",
+        "transition-[background,border-color,color] duration-[120ms] ease-[cubic-bezier(0.2,0,0,1)]",
+        "disabled:pointer-events-none disabled:opacity-50",
+        "select-none cursor-pointer",
         VARIANTS[variant],
         SIZES[size],
         className,
@@ -48,3 +67,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ),
 );
 Button.displayName = "Button";
+
+/**
+ * Backwards-compat alias for legacy `variant="default"` etc. callers.
+ * Prefer the explicit Verkstad variants going forward.
+ */
+export type ButtonVariant = Variant;

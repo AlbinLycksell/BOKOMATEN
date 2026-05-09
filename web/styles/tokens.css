@@ -1,87 +1,172 @@
-/* Nordic design tokens. No drop shadows — depth via tone + hairlines. */
+/* ============================================================
+   VERKSTAD — Switchboard Design Tokens
+   Mirror of /design-system/colors_and_type.css. Single source for
+   product UI. The narrow palette is intentional.
+   ============================================================ */
+
 :root {
-  /* Surfaces (warm neutrals) */
-  --color-bg: #FAFAF7;
-  --color-surface: #FFFFFF;
-  --color-surface-2: #F4F2EC;
-  --color-surface-3: #ECE9E0;
+  /* ---- Brand ------------------------------------------------ */
+  --havsbla:        #0A1F33;
+  --havsbla-85:     #1B2D40;
+  --havsbla-70:     #3D4D5C;
 
-  /* Hairlines */
-  --color-border: #E5E4DD;
-  --color-border-strong: #BFBCB1;
+  /* ---- Surface — Pleo-warm linne -------------------------- */
+  --linne:          #FBF8F2;
+  --linne-cool:     #FFFFFE;
+  --linne-deep:     #F2ECDF;
 
-  /* Text */
-  --color-text: #0F1310;
-  --color-text-strong: #050805;
-  --color-text-muted: #5A615C;
-  --color-text-faint: #8B8E86;
+  /* ---- Signal — sacred (CTA / akut / wordmark dot) ------- */
+  --signaloranje:        #E25822;
+  --signaloranje-press:  #C84612;
+  --signaloranje-soft:   rgba(226, 88, 34, 0.12);
 
-  /* Accent — deep Swedish forest green */
-  --color-accent: #1E5C3A;
-  --color-accent-hover: #194E31;
-  --color-accent-soft: #DCE8DF;
-  --color-accent-soft-hover: #C7DCCC;
-  --color-on-accent: #FAFAF7;
+  /* ---- Semantic --------------------------------------------- */
+  --tallgron:       #2F5233;
+  --tallgron-soft:  rgba(47, 82, 51, 0.12);
+  --larmrod:        #A82E2E;
+  --larmrod-soft:   rgba(168, 46, 46, 0.12);
 
-  /* Semantic */
-  --color-critical: #9C2C2C;
-  --color-critical-soft: #F4DADA;
-  --color-warning: #A77118;
-  --color-warning-soft: #F4E5C9;
-  --color-success: #2F6D4A;
-  --color-success-soft: #DEECDF;
-  --color-info: #2A4F73;
-  --color-info-soft: #DCE5EE;
+  /* ---- Warm neutrals (yellow-tuned, never blue) ----------- */
+  --grey-50:        #F5F0E5;
+  --grey-100:       #E4DDCD;
+  --grey-300:       #A89E8A;
+  --grey-500:       #5E5749;
+  --grey-700:       #3A3528;
+  --ink:            #14110B;
 
-  /* Radii */
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
-  --radius-pill: 9999px;
+  /* ---- Compatibility role tokens (legacy class names) ----- */
+  --color-bg:               var(--linne);
+  --color-bg-product:       var(--linne-cool);
+  --color-bg-inverse:       var(--havsbla);
+  --color-surface:          #FFFFFF;
+  --color-surface-2:        var(--linne-deep);
+  --color-surface-3:        var(--grey-50);
+  --color-surface-sunken:   var(--linne-deep);
+  --color-surface-inverse:  var(--havsbla);
 
-  /* Spacing scale (4px base) */
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 24px;
-  --space-6: 32px;
-  --space-7: 48px;
-  --space-8: 64px;
+  --color-border:           var(--grey-100);
+  --color-border-strong:    var(--grey-300);
+  --color-border-on-dark:   rgba(244, 239, 230, 0.14);
 
-  /* Typography */
-  --font-sans: "Inter", "InterVariable", ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --font-mono: ui-monospace, "JetBrains Mono", "SF Mono", "Menlo", monospace;
+  --color-text:             var(--ink);
+  --color-text-strong:      var(--havsbla);
+  --color-text-muted:       var(--grey-500);
+  --color-text-faint:       var(--grey-300);
+  --color-text-on-dark:     var(--linne);
+  --color-text-on-signal:   #FFFFFF;
 
-  --leading-tight: 1.2;
-  --leading-base: 1.5;
-  --leading-relaxed: 1.6;
+  /* Accent role binds to signaloranje (sacred — CTAs, wordmark dot, akut) */
+  --color-accent:           var(--signaloranje);
+  --color-accent-hover:     var(--signaloranje-press);
+  --color-accent-soft:      var(--signaloranje-soft);
+  --color-accent-soft-hover: rgba(226, 88, 34, 0.18);
+  --color-on-accent:        #FFFFFF;
+
+  /* Critical / positive / info / warning bound to Verkstad semantics */
+  --color-critical:         var(--larmrod);
+  --color-critical-soft:    var(--larmrod-soft);
+  --color-success:          var(--tallgron);
+  --color-success-soft:     var(--tallgron-soft);
+  --color-warning:          var(--signaloranje);
+  --color-warning-soft:     var(--signaloranje-soft);
+  --color-info:             var(--havsbla-70);
+  --color-info-soft:        rgba(61, 77, 92, 0.12);
+
+  /* ---- Typography ------------------------------------------- */
+  --font-display: var(--font-geist), "Söhne", "Söhne Breit", "Helvetica Neue", Arial, sans-serif;
+  --font-sans:    var(--font-geist), "Söhne", "Helvetica Neue", Arial, sans-serif;
+  --font-mono:    var(--font-geist-mono), "Söhne Mono", "JetBrains Mono", ui-monospace, monospace;
+
+  --tabular: "tnum" 1, "lnum" 1;
+
+  --t-display-xl:   clamp(56px, 9vw, 144px);
+  --t-display-l:    clamp(44px, 6.5vw, 96px);
+  --t-display-m:    clamp(32px, 4vw, 64px);
+  --t-h1:           48px;
+  --t-h2:           32px;
+  --t-h3:           22px;
+  --t-h4:           18px;
+  --t-body:         16px;
+  --t-body-l:       18px;
+  --t-body-s:       14px;
+  --t-meta:         12px;
+
+  --lh-display:     1.02;
+  --lh-h:           1.12;
+  --lh-body:        1.5;
+  --lh-tight:       1.2;
+  --leading-base:   var(--lh-body);
+
+  --tracking-display: -0.02em;
+  --tracking-h:       -0.01em;
+  --tracking-body:    0;
+  --tracking-meta:    0.08em;
+
+  /* ---- Spacing — 4px base ----------------------------------- */
+  --s-1:  4px;
+  --s-2:  8px;
+  --s-3:  12px;
+  --s-4:  16px;
+  --s-5:  20px;
+  --s-6:  24px;
+  --s-8:  32px;
+  --s-10: 40px;
+  --s-12: 48px;
+  --s-16: 64px;
+  --s-20: 80px;
+  --s-24: 96px;
+  --s-32: 128px;
+
+  /* ---- Radii — pill is signature (Pleo) -------------------- */
+  --r-pill:    9999px;
+  --r-card:    14px;
+  --r-input:   10px;
+  --r-tight:   6px;
+  --r-none:    0;
+
+  --radius-sm: var(--r-tight);
+  --radius-md: var(--r-input);
+  --radius-lg: var(--r-card);
+  --radius-pill: var(--r-pill);
+
+  /* ---- Borders --------------------------------------------- */
+  --bw-hairline: 1px;
+  --bw-strong:   2px;
+
+  /* ---- Elevation — NO drop shadows. Only the akut halo. ---- */
+  --shadow-signal: 0 0 0 4px rgba(226, 88, 34, 0.18),
+                   0 0 0 10px rgba(226, 88, 34, 0.08);
+
+  /* ---- Motion ---------------------------------------------- */
+  --ease-standard: cubic-bezier(0.2, 0.0, 0.0, 1.0);
+  --ease-out:      cubic-bezier(0.0, 0.0, 0.2, 1.0);
+  --ease-in:       cubic-bezier(0.4, 0.0, 1.0, 1.0);
+  --dur-1:  120ms;
+  --dur-2:  200ms;
+  --dur-3:  320ms;
+  --dur-pulse: 1400ms;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-bg: #0E1411;
-    --color-surface: #131A16;
-    --color-surface-2: #1A211C;
-    --color-surface-3: #232B25;
-    --color-border: #2A3330;
-    --color-border-strong: #46514C;
-    --color-text: #ECEAE0;
-    --color-text-strong: #FFFFFF;
-    --color-text-muted: #9CA39B;
-    --color-text-faint: #6E746C;
-    --color-accent: #6FB58A;
-    --color-accent-hover: #82C39C;
-    --color-accent-soft: #1F2D24;
-    --color-accent-soft-hover: #28392E;
-    --color-on-accent: #08110B;
-    --color-critical: #E08B8B;
-    --color-critical-soft: #2F1A1A;
-    --color-warning: #E6B66E;
-    --color-warning-soft: #2F2615;
-    --color-success: #82C39C;
-    --color-success-soft: #1A2820;
-    --color-info: #91B0CA;
-    --color-info-soft: #182433;
-  }
+/* ============================================================
+   Akutnotis pulse — single attention pulse, then stillness.
+   ============================================================ */
+@keyframes v-akut-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(226, 88, 34, 0.55); }
+  60%  { box-shadow: 0 0 0 24px rgba(226, 88, 34, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(226, 88, 34, 0); }
+}
+
+@keyframes v-heartbeat {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.45; transform: scale(0.92); }
+}
+
+@keyframes v-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes v-slide-in-right {
+  from { transform: translateX(24px); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
 }

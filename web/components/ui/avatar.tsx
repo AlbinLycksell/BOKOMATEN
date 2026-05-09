@@ -3,9 +3,16 @@ import { cn } from "@/lib/utils";
 interface AvatarProps {
   name: string;
   className?: string;
+  size?: "sm" | "md" | "lg";
 }
 
-export function Avatar({ name, className }: AvatarProps) {
+const SIZES = {
+  sm: "h-7 w-7 text-xs",
+  md: "h-9 w-9 text-sm",
+  lg: "h-12 w-12 text-base",
+};
+
+export function Avatar({ name, className, size = "md" }: AvatarProps) {
   const initials = name
     .split(" ")
     .map((part) => part[0]?.toUpperCase() ?? "")
@@ -16,7 +23,8 @@ export function Avatar({ name, className }: AvatarProps) {
     <span
       aria-hidden
       className={cn(
-        "inline-flex h-8 w-8 items-center justify-center rounded-full bg-surface-3 text-xs font-semibold text-text-strong border border-border",
+        "inline-grid place-items-center rounded-full bg-havsbla text-linne font-display font-medium",
+        SIZES[size],
         className,
       )}
     >

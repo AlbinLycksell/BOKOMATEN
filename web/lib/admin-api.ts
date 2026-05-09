@@ -1,10 +1,19 @@
 "use client";
 
-const FIRMA_ID = "01J0000FIRM0ANDERSSONSVVS00";
+import { AdminApiPath } from "./constants/api-paths";
+import { DEMO_FIRMA_ID } from "./constants/firma";
+import { ContentType, HttpHeader } from "./constants/headers";
+import type { SmsTemplate } from "./constants/enums";
+
+const AuditLogQueryParam = {
+  ACTION_PREFIX: "action_prefix",
+  HOURS: "hours",
+  LIMIT: "limit",
+} as const;
 
 const headers = (): HeadersInit => ({
-  "Content-Type": "application/json",
-  "X-Firma-Id": FIRMA_ID,
+  [HttpHeader.CONTENT_TYPE]: ContentType.JSON,
+  [HttpHeader.FIRMA_ID]: DEMO_FIRMA_ID,
 });
 
 export interface ScenarioPreset {
@@ -60,42 +69,42 @@ async function jpost<T>(path: string, body: unknown): Promise<T> {
 export const adminApi = {
   voiceTestReady: () =>
     jget<{ ready: boolean; provider: string; model: string; reason: string | null }>(
-      "/api/proxy/admin/voice-test/ready",
+      AdminApiPath.VOICE_TEST_READY,
     ),
   systemPrompt: () =>
     jget<{ text: string; length_chars: number; estimated_tokens: number }>(
-      "/api/proxy/admin/system-prompt",
+      AdminApiPath.SYSTEM_PROMPT,
     ),
-  listScenarios: () => jget<ScenarioPreset[]>("/api/proxy/admin/scenarios"),
+  listScenarios: () => jget<ScenarioPreset[]>(AdminApiPath.SCENARIOS),
   runScenario: (id: string) =>
-    jpost<ScenarioRunResult>(`/api/proxy/admin/scenarios/${id}/run`, {}),
-  listTools: () => jget<ToolListEntry[]>("/api/proxy/admin/tools"),
+    jpost<ScenarioRunResult>(AdminApiPath.SCENARIO_RUN(id), {}),
+  listTools: () => jget<ToolListEntry[]>(AdminApiPath.TOOLS),
   runTool: (name: string, args: Record<string, unknown>) =>
     jpost<{ name: string; result: Record<string, unknown> }>(
-      "/api/proxy/admin/tools/run",
+      AdminApiPath.TOOLS_RUN,
       { name, args },
     ),
   testSms: (
     to_phone: string,
-    template: string,
+    template: SmsTemplate,
     context_data: Record<string, unknown>,
   ) =>
     jpost<{ sent: boolean; sms_id: string; via: string }>(
-      "/api/proxy/admin/test/sms",
+      AdminApiPath.TEST_SMS,
       { to_phone, template, context_data },
     ),
   testEscalation: (severity: string, reason_sv: string) =>
     jpost<{ escalation_id: string; contacted: string[]; next_in_chain_minutes: number }>(
-      "/api/proxy/admin/test/escalation",
+      AdminApiPath.TEST_ESCALATION,
       { severity, reason_sv },
     ),
   auditLog: (params: { actionPrefix?: string; hours?: number; limit?: number } = {}) => {
     const qs = new URLSearchParams();
-    if (params.actionPrefix) qs.set("action_prefix", params.actionPrefix);
-    if (params.hours) qs.set("hours", String(params.hours));
-    if (params.limit) qs.set("limit", String(params.limit));
+    if (params.actionPrefix) qs.set(AuditLogQueryParam.ACTION_PREFIX, params.actionPrefix);
+    if (params.hours) qs.set(AuditLogQueryParam.HOURS, String(params.hours));
+    if (params.limit) qs.set(AuditLogQueryParam.LIMIT, String(params.limit));
     const tail = qs.toString() ? `?${qs.toString()}` : "";
-    return jget<AuditEntry[]>(`/api/proxy/admin/audit-log${tail}`);
+    return jget<AuditEntry[]>(`${AdminApiPath.AUDIT_LOG}${tail}`);
   },
   runEval: () =>
     jpost<{
@@ -105,7 +114,7 @@ export const adminApi = {
       emergency_false_negatives: number;
       by_intent: Record<string, number>;
       failures: Array<{ call_id: string; actual_intent: string | null; actual_severity: string | null }>;
-    }>("/api/proxy/admin/eval/run", {}),
+    }>(AdminApiPath.EVAL_RUN, {}),
   toolsLatency: () =>
     jget<
       Array<{
@@ -117,5 +126,5 @@ export const adminApi = {
         error_rate: number;
         breaches_p95: boolean;
       }>
-    >("/api/proxy/admin/metrics/tools/latency"),
+    >(AdminApiPath.TOOLS_LATENCY),
 };

@@ -1,27 +1,22 @@
-import { cn } from "@/lib/utils";
-import type { Severity } from "@/lib/api-models";
+import { StatusDot } from "@/components/ui/status-dot";
+import type { Severity as SeverityType } from "@/lib/api-models";
+import { Severity } from "@/lib/constants/enums";
 
-const COLOR: Record<Severity, string> = {
-  critical: "bg-critical",
-  high: "bg-warning",
-  medium: "bg-info",
-  low: "bg-success",
+const TONE: Record<SeverityType, "akut" | "critical" | "info" | "bokad"> = {
+  [Severity.CRITICAL]: "critical",
+  [Severity.HIGH]: "akut",
+  [Severity.MEDIUM]: "info",
+  [Severity.LOW]: "bokad",
 };
 
-export function SeverityDot({ severity }: { severity: Severity | null }) {
+export function SeverityDot({ severity }: { severity: SeverityType | null }) {
   if (!severity) {
     return (
       <span
         aria-label="ingen allvarsgrad"
-        className="inline-block h-2 w-2 rounded-full bg-surface-3 border border-border"
+        className="inline-block h-2 w-2 rounded-full bg-grey-300/60"
       />
     );
   }
-  return (
-    <span
-      aria-label={`allvarsgrad ${severity}`}
-      title={severity}
-      className={cn("inline-block h-2 w-2 rounded-full", COLOR[severity])}
-    />
-  );
+  return <StatusDot tone={TONE[severity]} ariaLabel={`allvarsgrad ${severity}`} />;
 }

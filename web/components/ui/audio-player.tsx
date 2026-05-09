@@ -43,7 +43,7 @@ export function AudioPlayer({ src, duration }: AudioPlayerProps) {
   };
 
   return (
-    <div className="rounded-md border border-border bg-surface-2 px-4 py-3 flex items-center gap-3">
+    <div className="rounded-[10px] bg-linne-deep px-4 py-3 flex items-center gap-3">
       <Button
         variant="ghost"
         size="icon"
@@ -54,13 +54,13 @@ export function AudioPlayer({ src, duration }: AudioPlayerProps) {
         {playing ? <PauseIcon className="h-4 w-4" /> : <PlayIcon className="h-4 w-4" />}
       </Button>
       <div className="flex-1">
-        <div className="h-1 rounded-full bg-surface-3 overflow-hidden">
+        <div className="h-1 rounded-full bg-grey-100 overflow-hidden">
           <div
-            className="h-full bg-accent transition-[width] duration-150"
+            className="h-full bg-havsbla transition-[width] duration-150"
             style={{ width: `${Math.round(progress * 100)}%` }}
           />
         </div>
-        <div className="mt-1 text-xs text-text-muted">
+        <div className="mt-1 text-xs text-text-muted v-tnum">
           {src ? "Inspelning tillgänglig" : "Inspelning saknas"}
           {duration ? ` · ${formatDurationSv(duration)}` : null}
         </div>

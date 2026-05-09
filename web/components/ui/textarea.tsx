@@ -10,10 +10,9 @@ export const Textarea = forwardRef<
     ref={ref}
     suppressHydrationWarning
     className={cn(
-      "min-h-24 w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text",
+      "min-h-28 w-full rounded-[10px] border border-border-strong bg-white px-4 py-3 text-base text-text",
       "placeholder:text-text-faint",
-      "focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent",
-      "font-mono",
+      "focus:outline-none focus:border-havsbla",
       className,
     )}
     {...props}

@@ -2,39 +2,67 @@
 @import "../styles/tokens.css";
 
 @theme {
-  --color-bg: var(--color-bg);
+  /* Brand colors expose tailwind utilities like bg-havsbla, text-signaloranje, etc. */
+  --color-havsbla: var(--havsbla);
+  --color-havsbla-85: var(--havsbla-85);
+  --color-havsbla-70: var(--havsbla-70);
+  --color-linne: var(--linne);
+  --color-linne-cool: var(--linne-cool);
+  --color-linne-deep: var(--linne-deep);
+  --color-signaloranje: var(--signaloranje);
+  --color-signaloranje-press: var(--signaloranje-press);
+  --color-tallgron: var(--tallgron);
+  --color-larmrod: var(--larmrod);
+  --color-ink: var(--ink);
+
+  /* Semantic role tokens (preferred names) */
+  --color-bg: var(--linne);
+  --color-bg-product: var(--linne-cool);
+  --color-bg-inverse: var(--havsbla);
   --color-surface: var(--color-surface);
   --color-surface-2: var(--color-surface-2);
   --color-surface-3: var(--color-surface-3);
+  --color-surface-sunken: var(--linne-deep);
+  --color-surface-inverse: var(--havsbla);
+
   --color-border: var(--color-border);
   --color-border-strong: var(--color-border-strong);
+  --color-border-on-dark: var(--color-border-on-dark);
+
   --color-text: var(--color-text);
   --color-text-strong: var(--color-text-strong);
   --color-text-muted: var(--color-text-muted);
   --color-text-faint: var(--color-text-faint);
+  --color-text-on-dark: var(--color-text-on-dark);
+  --color-text-on-signal: var(--color-text-on-signal);
+
   --color-accent: var(--color-accent);
   --color-accent-hover: var(--color-accent-hover);
   --color-accent-soft: var(--color-accent-soft);
   --color-accent-soft-hover: var(--color-accent-soft-hover);
   --color-on-accent: var(--color-on-accent);
+
   --color-critical: var(--color-critical);
   --color-critical-soft: var(--color-critical-soft);
-  --color-warning: var(--color-warning);
-  --color-warning-soft: var(--color-warning-soft);
   --color-success: var(--color-success);
   --color-success-soft: var(--color-success-soft);
+  --color-warning: var(--color-warning);
+  --color-warning-soft: var(--color-warning-soft);
   --color-info: var(--color-info);
   --color-info-soft: var(--color-info-soft);
 
-  --radius-sm: var(--radius-sm);
-  --radius-md: var(--radius-md);
-  --radius-lg: var(--radius-lg);
+  --radius-sm: var(--r-tight);
+  --radius-md: var(--r-input);
+  --radius-lg: var(--r-card);
+  --radius-pill: var(--r-pill);
 
+  --font-display: var(--font-display);
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
 
-  /* Drop shadows are forbidden in this design system. Override every
-   * `shadow-*` utility to no-op. */
+  /* Verkstad forbids drop shadows in product UI. Override every
+   * tailwind shadow utility to no-op. The signal halo lives on a
+   * dedicated `.shadow-signal` utility (defined below). */
   --shadow-2xs: none;
   --shadow-xs: none;
   --shadow-sm: none;
@@ -46,12 +74,15 @@
 }
 
 html, body {
-  background: var(--color-bg);
-  color: var(--color-text);
+  background: var(--linne);
+  color: var(--ink);
   font-family: var(--font-sans);
-  font-feature-settings: "cv11", "ss01", "ss03";
+  font-feature-settings: var(--tabular);
   font-variant-numeric: tabular-nums;
-  line-height: var(--leading-base);
+  line-height: var(--lh-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 * {
@@ -59,15 +90,87 @@ html, body {
 }
 
 ::selection {
-  background: var(--color-accent-soft);
-  color: var(--color-text-strong);
+  background: var(--linne-deep);
+  color: var(--havsbla);
 }
 
+/* Verkstad: orange focus ring would mean "akut, not 'you're typing here'".
+ * Use a 3px havsblå halo at 12% — accessibility-correct, on-brand. */
 button:focus-visible,
 a:focus-visible,
 input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
 [tabindex]:focus-visible {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 2px;
-  border-radius: var(--radius-sm);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(10, 31, 51, 0.18);
+  border-radius: var(--r-input);
+}
+
+/* Editorial typography utilities — opt-in via class. */
+.v-display-xl {
+  font-family: var(--font-display);
+  font-size: var(--t-display-xl);
+  line-height: var(--lh-display);
+  letter-spacing: var(--tracking-display);
+  font-weight: 600;
+  color: var(--havsbla);
+  text-wrap: pretty;
+}
+.v-display-l {
+  font-family: var(--font-display);
+  font-size: var(--t-display-l);
+  line-height: var(--lh-display);
+  letter-spacing: var(--tracking-display);
+  font-weight: 600;
+  color: var(--havsbla);
+  text-wrap: pretty;
+}
+.v-h1 {
+  font-family: var(--font-display);
+  font-size: var(--t-h1);
+  line-height: var(--lh-h);
+  letter-spacing: var(--tracking-h);
+  font-weight: 600;
+  color: var(--havsbla);
+}
+.v-h2 {
+  font-family: var(--font-display);
+  font-size: var(--t-h2);
+  line-height: var(--lh-h);
+  letter-spacing: var(--tracking-h);
+  font-weight: 600;
+  color: var(--havsbla);
+}
+.v-meta {
+  font-family: var(--font-mono);
+  font-size: var(--t-meta);
+  letter-spacing: var(--tracking-meta);
+  text-transform: uppercase;
+  color: var(--grey-500);
+  font-feature-settings: var(--tabular);
+}
+.v-tnum {
+  font-feature-settings: var(--tabular);
+  font-variant-numeric: tabular-nums;
+}
+.v-mono {
+  font-family: var(--font-mono);
+  font-feature-settings: var(--tabular);
+}
+
+/* Akut visual events — pulse + signal halo */
+.v-akut-pulse {
+  animation: v-akut-pulse 1400ms var(--ease-out) 1;
+}
+.v-heartbeat {
+  animation: v-heartbeat var(--dur-pulse) ease-in-out infinite;
+}
+.shadow-signal {
+  box-shadow: var(--shadow-signal);
+}
+
+/* Dialog scrim utility used by detail sheets */
+.v-scrim {
+  background: rgba(20, 17, 11, 0.45);
 }

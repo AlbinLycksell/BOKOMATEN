@@ -7,8 +7,12 @@ import { CallRow } from "@/components/inbox/call-row";
 import { useInboxWebSocket } from "@/lib/inbox-ws";
 import { useCallsQuery } from "@/lib/queries";
 import type { CallRead, Intent } from "@/lib/api-models";
+import { CallSource } from "@/lib/constants/enums";
+import { DEMO_FIRMA_ID } from "@/lib/constants/firma";
+import { QueryKey } from "@/lib/constants/query-keys";
+import { InboxEvent } from "@/lib/constants/ws";
 
-const FIRMA_ID = "01J0000FIRM0ANDERSSONSVVS00";
+const PULSE_DURATION_MS = 2_000;
 
 interface LiveInboxProps {
   initialData: CallRead[];
@@ -17,46 +21,56 @@ interface LiveInboxProps {
 
 export function LiveInbox({ initialData, intent }: LiveInboxProps) {
   const qc = useQueryClient();
-  const { data, isFetching } = useCallsQuery({ intent });
+  const { data, isFetching } = useCallsQuery({ intent, source: CallSource.TELEPHONY });
   const calls = data ?? initialData;
   const [pulse, setPulse] = useState<string | null>(null);
   const lastCreatedRef = useRef<string | null>(null);
 
   useInboxWebSocket({
-    firmaId: FIRMA_ID,
+    firmaId: DEMO_FIRMA_ID,
     onEvent: (msg) => {
-      qc.invalidateQueries({ queryKey: ["calls"] });
-      if (msg.event === "inbox.call.created") {
+      qc.invalidateQueries({ queryKey: QueryKey.callsAll() });
+      if (msg.event === InboxEvent.CALL_CREATED) {
         lastCreatedRef.current = msg.payload.id;
         setPulse(msg.payload.id);
-        setTimeout(() => setPulse(null), 2_000);
+        setTimeout(() => setPulse(null), PULSE_DURATION_MS);
       }
     },
   });
 
   useEffect(() => {
     if (!pulse) return;
-    qc.invalidateQueries({ queryKey: ["call", pulse] });
+    qc.invalidateQueries({ queryKey: QueryKey.call(pulse) });
   }, [pulse, qc]);
 
   return (
-    <div className="flex-1 overflow-y-auto bg-bg" aria-busy={isFetching}>
-      <div className="mx-auto max-w-4xl border-x border-border bg-surface">
+    <div className="flex-1 overflow-y-auto bg-linne" aria-busy={isFetching}>
+      <div className="mx-auto max-w-5xl px-8 lg:px-12 py-10">
+        <div className="flex items-baseline justify-between mb-5">
+          <h2 className="font-display text-[28px] leading-[1.1] tracking-[-0.015em] font-semibold text-text-strong">
+            I natt
+          </h2>
+          <span className="text-sm text-text-muted">
+            {calls.length} samtal
+          </span>
+        </div>
         {calls.length === 0 ? (
           <EmptyState />
         ) : (
-          calls.map((c: CallRead) => (
-            <div
-              key={c.id}
-              className={
-                c.id === pulse
-                  ? "transition-colors bg-accent-soft"
-                  : "transition-colors"
-              }
-            >
-              <CallRow call={c} />
-            </div>
-          ))
+          <ul className="list-none m-0 p-0">
+            {calls.map((c: CallRead) => (
+              <li
+                key={c.id}
+                className={
+                  c.id === pulse
+                    ? "transition-colors bg-signaloranje-soft/40"
+                    : "transition-colors"
+                }
+              >
+                <CallRow call={c} />
+              </li>
+            ))}
+          </ul>
         )}
       </div>
     </div>
@@ -65,12 +79,11 @@ export function LiveInbox({ initialData, intent }: LiveInboxProps) {
 
 function EmptyState() {
   return (
-    <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-      <div className="text-4xl">📭</div>
-      <h2 className="mt-4 text-base font-medium text-text-strong">
-        Inga samtal ännu
-      </h2>
-      <p className="mt-1 max-w-sm text-sm text-text-muted">
+    <div className="border-t border-border py-16 text-center">
+      <p className="font-display text-[20px] font-medium text-text-strong">
+        Det är tyst i kväll.
+      </p>
+      <p className="mt-2 text-[15px] text-text-muted max-w-md mx-auto">
         När det första samtalet kommer in dyker det upp här direkt — ingen sida att uppdatera.
       </p>
     </div>

@@ -2,12 +2,25 @@ import { type HTMLAttributes, forwardRef } from "react";
 
 import { cn } from "@/lib/utils";
 
-export const Card = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
+type Variant = "default" | "sunken" | "inverse";
+
+interface CardProps extends HTMLAttributes<HTMLDivElement> {
+  variant?: Variant;
+}
+
+const VARIANTS: Record<Variant, string> = {
+  default: "bg-surface border border-border",
+  sunken: "bg-linne-deep border border-transparent",
+  inverse: "bg-havsbla border border-border-on-dark text-linne",
+};
+
+export const Card = forwardRef<HTMLDivElement, CardProps>(
+  ({ className, variant = "default", ...props }, ref) => (
     <div
       ref={ref}
       className={cn(
-        "rounded-md border border-border bg-surface",
+        "rounded-[14px]",
+        VARIANTS[variant],
         className,
       )}
       {...props}
@@ -27,11 +40,14 @@ export const CardHeader = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivEleme
 );
 CardHeader.displayName = "CardHeader";
 
-export const CardTitle = forwardRef<HTMLDivElement, HTMLAttributes<HTMLHeadingElement>>(
+export const CardTitle = forwardRef<HTMLHeadingElement, HTMLAttributes<HTMLHeadingElement>>(
   ({ className, ...props }, ref) => (
     <h3
-      ref={ref as never}
-      className={cn("text-base font-semibold tracking-tight text-text-strong", className)}
+      ref={ref}
+      className={cn(
+        "font-display text-lg font-medium tracking-[-0.005em] text-text-strong",
+        className,
+      )}
       {...props}
     />
   ),

@@ -1,4 +1,7 @@
+import Link from "next/link";
+
 import { Topbar } from "@/components/shell/topbar";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScenarioRunner } from "@/components/admin/scenario-runner";
 import { ToolPlayground } from "@/components/admin/tool-playground";
@@ -7,16 +10,26 @@ import { TestActions } from "@/components/admin/test-actions";
 import { AuditLogViewer } from "@/components/admin/audit-log-viewer";
 import { EvalRunner } from "@/components/admin/eval-runner";
 import { VoiceTest } from "@/components/admin/voice-test";
+import { formatTimeSv, formatDateSv, formatDurationSv } from "@/lib/format";
+import type { CallRead } from "@/lib/api-models";
+import { ServerApiPath } from "@/lib/constants/api-paths";
+import { CallSource } from "@/lib/constants/enums";
+import { DEMO_FIRMA_ID } from "@/lib/constants/firma";
+import { FetchCache, HttpHeader } from "@/lib/constants/headers";
 
 export const dynamic = "force-dynamic";
 
-const BACKEND = process.env.SVARSA_API_BASE ?? "http://127.0.0.1:8000";
-const FIRMA_ID = "01J0000FIRM0ANDERSSONSVVS00";
+const BACKEND_BASE_ENV = "SWITCHBOARD_API_BASE";
+const DEFAULT_BACKEND_BASE = "http://127.0.0.1:8000";
+const TEST_CALLS_PER_SOURCE = 5;
+const TEST_CALLS_TOTAL = 8;
+
+const BACKEND = process.env[BACKEND_BASE_ENV] ?? DEFAULT_BACKEND_BASE;
 
 async function fetchJson<T>(path: string): Promise<T> {
   const r = await fetch(`${BACKEND}${path}`, {
-    headers: { "X-Firma-Id": FIRMA_ID },
-    cache: "no-store",
+    headers: { [HttpHeader.FIRMA_ID]: DEMO_FIRMA_ID },
+    cache: FetchCache.NO_STORE,
   });
   if (!r.ok) throw new Error(`${r.status}`);
   return (await r.json()) as T;
@@ -35,7 +48,7 @@ async function loadScenarios() {
         caller_phone: string;
         turn_count: number;
       }>
-    >("/api/admin/scenarios");
+    >(ServerApiPath.ADMIN_SCENARIOS);
   } catch {
     return [];
   }
@@ -44,15 +57,29 @@ async function loadScenarios() {
 async function loadTools() {
   try {
     return await fetchJson<Array<{ name: string; args_schema: Record<string, unknown> }>>(
-      "/api/admin/tools",
+      ServerApiPath.ADMIN_TOOLS,
     );
   } catch {
     return [];
   }
 }
 
+async function loadTestCalls() {
+  try {
+    const [voiceCalls, scenarioCalls] = await Promise.all([
+      fetchJson<CallRead[]>(ServerApiPath.CALLS_BY_SOURCE(CallSource.VOICE_TEST, TEST_CALLS_PER_SOURCE)),
+      fetchJson<CallRead[]>(ServerApiPath.CALLS_BY_SOURCE(CallSource.SCENARIO, TEST_CALLS_PER_SOURCE)),
+    ]);
+    return [...voiceCalls, ...scenarioCalls].sort(
+      (a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime(),
+    ).slice(0, TEST_CALLS_TOTAL);
+  } catch {
+    return [];
+  }
+}
+
 export default async function AdminPage() {
-  const [presets, tools] = await Promise.all([loadScenarios(), loadTools()]);
+  const [presets, tools, testCalls] = await Promise.all([loadScenarios(), loadTools(), loadTestCalls()]);
 
   return (
     <>
@@ -69,6 +96,50 @@ export default async function AdminPage() {
               webbläsaren — transkript och verktygsanrop landar i inkorgen direkt.
             </p>
             <VoiceTest />
+          </Section>
+
+          <Section title="Senaste testsamtal">
+            {testCalls.length === 0 ? (
+              <Card>
+                <CardContent>
+                  <p className="py-4 text-sm text-text-muted">
+                    Inga testsamtal ännu — kör ett röstprov eller ett scenario så dyker det upp här.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <CardContent className="p-0">
+                  <ul className="divide-y divide-border">
+                    {testCalls.map((c) => (
+                      <li key={c.id}>
+                        <Link
+                          href={`/calls/${encodeURIComponent(c.id)}`}
+                          className="flex items-center gap-3 px-4 py-3 hover:bg-surface-2 transition-colors"
+                        >
+                          <Badge variant="neutral" className="shrink-0">
+                            {c.source === CallSource.VOICE_TEST ? "Röstprov" : "Scenario"}
+                          </Badge>
+                          <span className="text-sm text-text-muted shrink-0">
+                            {c.caller_phone ?? "—"}
+                          </span>
+                          <span className="text-xs text-text-faint">
+                            {formatDateSv(c.started_at)} {formatTimeSv(c.started_at)}
+                          </span>
+                          <span className="text-xs text-text-faint">
+                            {formatDurationSv(c.duration_seconds)}
+                          </span>
+                          <span className="ml-auto text-xs text-text-muted truncate max-w-xs">
+                            {c.summary_short ?? "Summering genereras…"}
+                          </span>
+                          <span className="text-havsbla text-xs shrink-0 font-medium">Öppna →</span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            )}
           </Section>
 
           <Section title="Emulera samtal (text)">

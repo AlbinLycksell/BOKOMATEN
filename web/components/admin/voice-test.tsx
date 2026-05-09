@@ -8,31 +8,33 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { adminApi } from "@/lib/admin-api";
 import { bridgeWsUrl } from "@/lib/backend-url";
+import { BRIDGE_BYE_MESSAGES_SV, VoiceTestState } from "@/lib/constants/admin";
+import { AudioContextState, AudioRate, VoiceCaptureWorklet } from "@/lib/constants/audio";
+import { CallSource } from "@/lib/constants/enums";
+import { DEMO_FIRMA_ID, TEST_PHONE_E164, TEST_TARGET_PHONE_E164 } from "@/lib/constants/firma";
+import {
+  BridgeBye,
+  BridgeFrameField,
+  BridgeQueryParam,
+  BridgeWSEvent,
+} from "@/lib/constants/ws";
+import { TranscriptRole } from "@/lib/constants/enums";
 
-const FIRMA_ID = "01J0000FIRM0ANDERSSONSVVS00";
-const PLAYBACK_RATE = 24_000; // matches Gemini Live audio output
-const TEST_PHONE = "+46708000000";
+const PLAYBACK_RATE = AudioRate.PCM_24K;
+const SUMMARY_HINT_MS = 4_000;
+const CAPTION_MERGE_WINDOW_MS = 4_000;
+const BASE64_CHUNK_SIZE = 0x8000;
+const PCM16_FULL_SCALE = 0x8000;
 
-type ConnState =
-  | "idle"
-  | "checking"
-  | "requesting_mic"
-  | "connecting"
-  | "live"
-  | "ending"
-  | "ended";
+type ConnState = (typeof VoiceTestState)[keyof typeof VoiceTestState];
 
-const REASON_MESSAGES: Record<string, string> = {
-  gemini_auth_failed:
-    "Gemini avvisade autentiseringen. GEMINI_API_KEY är ogiltig, utgången, eller i fel projekt.",
-  gemini_model_unavailable:
-    "Gemini-modellen är otillgänglig för det här projektet. Kontrollera SWITCHBOARD_GEMINI_MODEL.",
-  gemini_quota_exhausted:
-    "Gemini-quota är slut för det här projektet eller minuten. Vänta en stund eller höj rate-limit.",
-  gemini_connect_failed:
-    "Bryggan kunde inte ansluta till Gemini Live. Vanligtvis nätverk eller GEMINI_API_KEY saknas.",
-  unknown_firma: "Okänd firma — bridge fick fel firma_id.",
-};
+type CaptionRole = typeof TranscriptRole.CALLER | typeof TranscriptRole.AI;
+
+interface CaptionLine {
+  role: CaptionRole;
+  text: string;
+  receivedAt: number;
+}
 
 interface Stats {
   framesSent: number;
@@ -51,12 +53,14 @@ const blankStats: Stats = {
 };
 
 export function VoiceTest() {
-  const [state, setState] = useState<ConnState>("idle");
+  const [state, setState] = useState<ConnState>(VoiceTestState.IDLE);
   const [error, setError] = useState<string | null>(null);
   const [callId, setCallId] = useState<string | null>(null);
   const [stats, setStats] = useState<Stats>(blankStats);
   const [muted, setMuted] = useState(false);
   const [providerLabel, setProviderLabel] = useState<string | null>(null);
+  const [captions, setCaptions] = useState<CaptionLine[]>([]);
+  const [summaryWait, setSummaryWait] = useState(false);
 
   const wsRef = useRef<WebSocket | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -95,9 +99,8 @@ export function VoiceTest() {
     userClosingRef.current = false;
     serverReasonRef.current = null;
     setStats({ ...blankStats, startedAt: Date.now() });
-    setState("checking");
+    setState(VoiceTestState.CHECKING);
 
-    // Pre-flight: verify Gemini is configured before opening the WS.
     try {
       const ready = await adminApi.voiceTestReady();
       setProviderLabel(`${ready.provider} · ${ready.model}`);
@@ -106,18 +109,18 @@ export function VoiceTest() {
           ready.reason ??
             "Voice test inte konfigurerat på backenden. Sätt GEMINI_API_KEY och starta om.",
         );
-        setState("idle");
+        setState(VoiceTestState.IDLE);
         return;
       }
     } catch (e) {
       setError(
         `Kunde inte nå backenden för pre-flight: ${e}. Kontrollera att uvicorn kör på port 8000.`,
       );
-      setState("idle");
+      setState(VoiceTestState.IDLE);
       return;
     }
 
-    setState("requesting_mic");
+    setState(VoiceTestState.REQUESTING_MIC);
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -131,36 +134,41 @@ export function VoiceTest() {
       streamRef.current = stream;
     } catch (e) {
       setError(`Mikrofontillstånd nekat: ${e}`);
-      setState("idle");
+      setState(VoiceTestState.IDLE);
       return;
     }
 
-    setState("connecting");
+    setState(VoiceTestState.CONNECTING);
 
     const audioCtx = new AudioContext();
     audioCtxRef.current = audioCtx;
+    if (audioCtx.state === AudioContextState.SUSPENDED) {
+      await audioCtx.resume();
+    }
     try {
-      await audioCtx.audioWorklet.addModule("/voice-capture-worklet.js");
+      await audioCtx.audioWorklet.addModule(VoiceCaptureWorklet.PATH);
     } catch (e) {
       setError(`AudioWorklet kunde inte laddas: ${e}`);
       cleanup();
-      setState("idle");
+      setState(VoiceTestState.IDLE);
       return;
     }
 
     const source = audioCtx.createMediaStreamSource(streamRef.current!);
     sourceRef.current = source;
-    const worklet = new AudioWorkletNode(audioCtx, "voice-capture", {
-      processorOptions: { targetRate: 24_000 },
+    const worklet = new AudioWorkletNode(audioCtx, VoiceCaptureWorklet.PROCESSOR_NAME, {
+      processorOptions: { targetRate: AudioRate.PCM_24K },
     });
     workletRef.current = worklet;
     playCursorRef.current = audioCtx.currentTime;
 
     const id = `test-${Date.now().toString(36)}`;
     setCallId(id);
+    setCaptions([]);
 
-    const url = bridgeWsUrl(FIRMA_ID, id);
-    // Visible in the browser console so connection problems are obvious.
+    const url =
+      bridgeWsUrl(DEMO_FIRMA_ID, id) +
+      `?${BridgeQueryParam.SOURCE}=${CallSource.VOICE_TEST}`;
     // eslint-disable-next-line no-console
     console.info("[voice-test] opening", url);
     const ws = new WebSocket(url);
@@ -170,31 +178,46 @@ export function VoiceTest() {
     ws.onopen = () => {
       ws.send(
         JSON.stringify({
-          t: "hello",
-          callid: id,
-          from: TEST_PHONE,
-          to: "+46812345678",
+          [BridgeFrameField.TYPE]: BridgeWSEvent.HELLO,
+          [BridgeFrameField.CALLID]: id,
+          [BridgeFrameField.FROM]: TEST_PHONE_E164,
+          [BridgeFrameField.TO]: TEST_TARGET_PHONE_E164,
         }),
       );
-      setState("live");
+      setState(VoiceTestState.LIVE);
     };
 
     ws.onmessage = (e) => {
       try {
         const msg = JSON.parse(typeof e.data === "string" ? e.data : "{}");
-        if (msg.t === "audio" && typeof msg.data === "string") {
-          const ab = base64ToArrayBuffer(msg.data);
+        const t = msg[BridgeFrameField.TYPE];
+        if (t === BridgeWSEvent.AUDIO && typeof msg[BridgeFrameField.DATA] === "string") {
+          const ab = base64ToArrayBuffer(msg[BridgeFrameField.DATA]);
           schedulePcm24k(audioCtx, ab);
           setStats((s) => ({
             ...s,
             framesReceived: s.framesReceived + 1,
             bytesReceived: s.bytesReceived + ab.byteLength,
           }));
-        } else if (msg.t === "bye") {
-          // Server-initiated bye carries a reason. Surface it immediately.
-          if (typeof msg.reason === "string" && msg.reason) {
-            serverReasonRef.current = msg.reason;
-            setError(REASON_MESSAGES[msg.reason] ?? `Bridge avslutade: ${msg.reason}`);
+        } else if (
+          t === BridgeWSEvent.TRANSCRIPT &&
+          typeof msg[BridgeFrameField.TEXT] === "string"
+        ) {
+          const role: CaptionRole =
+            msg[BridgeFrameField.ROLE] === TranscriptRole.CALLER
+              ? TranscriptRole.CALLER
+              : TranscriptRole.AI;
+          const text = String(msg[BridgeFrameField.TEXT]);
+          if (text.trim()) {
+            setCaptions((c) => mergeCaption(c, role, text));
+          }
+        } else if (t === BridgeWSEvent.BYE) {
+          const reason = msg[BridgeFrameField.REASON];
+          if (typeof reason === "string" && reason) {
+            serverReasonRef.current = reason;
+            setError(
+              BRIDGE_BYE_MESSAGES_SV[reason as BridgeBye] ?? `Bridge avslutade: ${reason}`,
+            );
           }
         }
       } catch {
@@ -203,23 +226,19 @@ export function VoiceTest() {
     };
 
     ws.onerror = () => {
-      // Don't show a generic message here — `onclose` runs right after with
-      // more useful info (and any server bye reason already set).
+      /* `onclose` runs right after with more useful info */
     };
 
     ws.onclose = (ev) => {
-      // User pressed Stop → graceful close, no error.
       if (userClosingRef.current) {
-        setState("ended");
+        setState(VoiceTestState.ENDED);
         return;
       }
-      // Server already told us why via {t:"bye",reason} → keep that error.
       if (serverReasonRef.current) {
-        setState("ended");
+        setState(VoiceTestState.ENDED);
         return;
       }
-      // Otherwise it's an unexpected drop — surface code + best guess.
-      setState("ended");
+      setState(VoiceTestState.ENDED);
       if (!ev.wasClean) {
         setError(
           `WebSocket föll (kod ${ev.code}). Backenden tappade förbindelsen oväntat — ` +
@@ -232,7 +251,12 @@ export function VoiceTest() {
       if (ws.readyState !== WebSocket.OPEN) return;
       const ab = ev.data as ArrayBuffer;
       const b64 = arrayBufferToBase64(ab);
-      ws.send(JSON.stringify({ t: "audio", data: b64 }));
+      ws.send(
+        JSON.stringify({
+          [BridgeFrameField.TYPE]: BridgeWSEvent.AUDIO,
+          [BridgeFrameField.DATA]: b64,
+        }),
+      );
       setStats((s) => ({
         ...s,
         framesSent: s.framesSent + 1,
@@ -241,26 +265,31 @@ export function VoiceTest() {
     };
 
     source.connect(worklet);
-    // worklet does not connect to destination — no monitoring/feedback
   };
 
   const stop = () => {
     userClosingRef.current = true;
-    setState("ending");
+    setState(VoiceTestState.ENDING);
     try {
-      wsRef.current?.send(JSON.stringify({ t: "bye" }));
+      wsRef.current?.send(
+        JSON.stringify({ [BridgeFrameField.TYPE]: BridgeWSEvent.BYE }),
+      );
     } catch {
       /* ignore */
     }
     cleanup();
-    setState("ended");
+    setState(VoiceTestState.ENDED);
+    setSummaryWait(true);
+    setTimeout(() => setSummaryWait(false), SUMMARY_HINT_MS);
   };
 
   const schedulePcm24k = (ctx: AudioContext, ab: ArrayBuffer) => {
+    if (ctx.state === AudioContextState.SUSPENDED) void ctx.resume();
     const int16 = new Int16Array(ab);
     if (int16.length === 0) return;
     const float32 = new Float32Array(int16.length);
-    for (let i = 0; i < int16.length; i++) float32[i] = (int16[i] ?? 0) / 0x8000;
+    for (let i = 0; i < int16.length; i++)
+      float32[i] = (int16[i] ?? 0) / PCM16_FULL_SCALE;
     const buffer = ctx.createBuffer(1, float32.length, PLAYBACK_RATE);
     buffer.copyToChannel(float32, 0);
     const node = ctx.createBufferSource();
@@ -272,7 +301,7 @@ export function VoiceTest() {
   };
 
   const elapsed =
-    stats.startedAt && state === "live"
+    stats.startedAt && state === VoiceTestState.LIVE
       ? Math.floor((Date.now() - stats.startedAt) / 1000)
       : 0;
 
@@ -318,23 +347,27 @@ export function VoiceTest() {
         </div>
 
         <div className="flex items-center gap-3">
-          {state === "idle" || state === "ended" ? (
+          {state === VoiceTestState.IDLE || state === VoiceTestState.ENDED ? (
             <Button onClick={() => void start()}>Starta test-samtal</Button>
           ) : (
             <>
-              <Button variant="critical" onClick={stop} disabled={state === "ending"}>
+              <Button
+                variant="critical"
+                onClick={stop}
+                disabled={state === VoiceTestState.ENDING}
+              >
                 Avsluta samtalet
               </Button>
               <Button
                 variant="outline"
                 onClick={() => setMuted((m) => !m)}
-                disabled={state !== "live"}
+                disabled={state !== VoiceTestState.LIVE}
               >
                 {muted ? "Aktivera mic" : "Tysta mic"}
               </Button>
             </>
           )}
-          {state === "live" ? (
+          {state === VoiceTestState.LIVE ? (
             <span className="text-xs text-text-muted ml-auto">{elapsed}s aktivt</span>
           ) : null}
           {providerLabel ? (
@@ -346,7 +379,7 @@ export function VoiceTest() {
 
         {error ? <p className="text-sm text-critical">{error}</p> : null}
 
-        {state === "live" || state === "ended" ? (
+        {state === VoiceTestState.LIVE || state === VoiceTestState.ENDED ? (
           <div className="grid gap-2 md:grid-cols-4 text-xs">
             <Stat label="Skickade frames" value={stats.framesSent.toLocaleString("sv-SE")} />
             <Stat label="Mottagna frames" value={stats.framesReceived.toLocaleString("sv-SE")} />
@@ -355,16 +388,51 @@ export function VoiceTest() {
           </div>
         ) : null}
 
-        {callId && state === "ended" ? (
-          <div className="rounded-md border border-border bg-surface-2 p-3 text-sm">
-            Samtalet sparades som{" "}
+        {captions.length > 0 ? (
+          <div className="rounded-md border border-border bg-surface-2 p-3">
+            <div className="text-xs uppercase tracking-wide text-text-muted mb-2">
+              Live-transkript
+            </div>
+            <div className="grid gap-2 max-h-72 overflow-y-auto">
+              {captions.map((c, i) => (
+                <div key={i} className="flex gap-2 text-sm">
+                  <span
+                    className={
+                      c.role === TranscriptRole.AI
+                        ? "font-mono text-[11px] uppercase tracking-[0.04em] text-signaloranje w-16 shrink-0 pt-0.5"
+                        : "text-xs uppercase tracking-wide text-text-muted w-16 shrink-0 pt-0.5"
+                    }
+                  >
+                    {c.role === TranscriptRole.AI ? "Switchboard" : "Du"}
+                  </span>
+                  <span className="text-text">{c.text}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        {callId && state === VoiceTestState.ENDED ? (
+          <div className="rounded-[10px] border border-border bg-linne-deep p-4 flex items-start justify-between gap-4">
+            <div className="text-sm">
+              <p className="font-medium text-text-strong">Samtalet är sparat</p>
+              <p className="mt-0.5 text-text-muted">
+                Transkript, verktygsanrop och AI-summering finns på samtalssidan.
+              </p>
+              {summaryWait ? (
+                <p className="mt-1 text-xs text-text-faint">
+                  Sammanfattningen genereras i bakgrunden (~1–3 s)
+                </p>
+              ) : null}
+            </div>
             <Link
               href={`/calls/${encodeURIComponent(callId)}`}
-              className="text-accent hover:underline"
+              className="shrink-0"
             >
-              {callId}
-            </Link>{" "}
-            — där hittar du transkriptet, verktygsanropen och AI-summeringen.
+              <Button variant="outline" size="sm">
+                Öppna samtalet →
+              </Button>
+            </Link>
           </div>
         ) : null}
       </CardContent>
@@ -374,13 +442,13 @@ export function VoiceTest() {
 
 function StatePill({ state }: { state: ConnState }) {
   const map: Record<ConnState, [string, "neutral" | "warning" | "success" | "critical"]> = {
-    idle: ["Inaktiv", "neutral"],
-    checking: ["Pre-flight…", "warning"],
-    requesting_mic: ["Begär mic…", "warning"],
-    connecting: ["Ansluter…", "warning"],
-    live: ["LIVE", "success"],
-    ending: ["Avslutar…", "warning"],
-    ended: ["Avslutat", "neutral"],
+    [VoiceTestState.IDLE]: ["Inaktiv", "neutral"],
+    [VoiceTestState.CHECKING]: ["Pre-flight…", "warning"],
+    [VoiceTestState.REQUESTING_MIC]: ["Begär mic…", "warning"],
+    [VoiceTestState.CONNECTING]: ["Ansluter…", "warning"],
+    [VoiceTestState.LIVE]: ["LIVE", "success"],
+    [VoiceTestState.ENDING]: ["Avslutar…", "warning"],
+    [VoiceTestState.ENDED]: ["Avslutat", "neutral"],
   };
   const [label, variant] = map[state];
   return <Badge variant={variant}>{label}</Badge>;
@@ -395,12 +463,25 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
+function mergeCaption(
+  prev: CaptionLine[],
+  role: CaptionRole,
+  text: string,
+): CaptionLine[] {
+  const last = prev[prev.length - 1];
+  const now = Date.now();
+  if (last && last.role === role && now - last.receivedAt < CAPTION_MERGE_WINDOW_MS) {
+    const updated = { ...last, text: `${last.text} ${text}`.trim(), receivedAt: now };
+    return [...prev.slice(0, -1), updated];
+  }
+  return [...prev, { role, text, receivedAt: now }];
+}
+
 function arrayBufferToBase64(ab: ArrayBuffer): string {
   const bytes = new Uint8Array(ab);
   let bin = "";
-  const chunkSize = 0x8000;
-  for (let i = 0; i < bytes.length; i += chunkSize) {
-    bin += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  for (let i = 0; i < bytes.length; i += BASE64_CHUNK_SIZE) {
+    bin += String.fromCharCode(...bytes.subarray(i, i + BASE64_CHUNK_SIZE));
   }
   return btoa(bin);
 }
