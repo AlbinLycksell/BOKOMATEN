@@ -13,6 +13,7 @@ from svarsa.api import (
     routes_customers,
     routes_firma,
     routes_health,
+    routes_integrations,
     routes_tools,
     ws_inbox,
 )
@@ -67,6 +68,7 @@ def create_app() -> FastAPI:
     app.include_router(routes_customers.router)
     app.include_router(routes_firma.router)
     app.include_router(routes_tools.router)
+    app.include_router(routes_integrations.router)
     app.include_router(elks_voice.router)
     app.include_router(ws_inbox.router)
     app.include_router(bridge_ws.router)

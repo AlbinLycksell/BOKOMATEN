@@ -76,6 +76,11 @@ class Settings(BaseSettings):
     elks_default_sender_id: str = "Svarsa"
     elks_webhook_secret: str = ""
 
+    # ---- fortnox ----
+    fortnox_client_id: str = ""
+    fortnox_client_secret: str = ""
+    fortnox_redirect_uri: str = "https://app.svarsa.se/api/integrations/fortnox/callback"
+
     # ---- auth (NextAuth-issued JWT) ----
     auth_mode: Literal["dev_header", "jwks"] = "dev_header"
     auth_jwks_url: str = ""
