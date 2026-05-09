@@ -12,7 +12,7 @@ Every authenticated request resolves to one `firma_id`. We bind it as a `context
 Code that needs the current scope:
 
 ```python
-from svarsa.core.tenant import get_firma_id, require_firma_id
+from switchboard.core.tenant import get_firma_id, require_firma_id
 
 # Optional read
 fid = get_firma_id()
@@ -54,7 +54,7 @@ Convention: `firma:{firma_id}:<purpose>:<key>`. Anything tenant-agnostic goes un
 
 The one shared-everything exception. Recordings carry the most sensitive data (caller voices, addresses, occasional accidental personnummer). Production layout:
 
-- One GCS bucket per firma: `gs://svarsa-recordings-{firma_id}-{region}`
+- One GCS bucket per firma: `gs://switchboard-recordings-{firma_id}-{region}`
 - Per-tenant CMEK key in Cloud KMS
 - 7-day default TTL via Lifecycle rule, configurable per firma
 

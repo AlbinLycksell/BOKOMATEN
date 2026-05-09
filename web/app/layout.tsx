@@ -11,7 +11,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Svarsa AI",
+  title: "Switchboard AI",
   description: "Voice-first AI receptionist for Swedish hantverkare.",
 };
 

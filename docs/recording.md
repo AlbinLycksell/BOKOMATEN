@@ -22,8 +22,8 @@ caller speech ── 46elks ── bridge ── (caller leg buffered)
 
 ## Per-tenant isolation (PRD §8.9)
 
-- One bucket per firma: `svarsa-rec-{firma_id_lower}-europe-west4`
-- Per-tenant CMEK: `projects/{p}/locations/europe-west4/keyRings/svarsa/cryptoKeys/firma-{id_lower}`
+- One bucket per firma: `switchboard-rec-{firma_id_lower}-europe-west4`
+- Per-tenant CMEK: `projects/{p}/locations/europe-west4/keyRings/switchboard/cryptoKeys/firma-{id_lower}`
 - `LocalStorage` (dev) refuses path traversal and tenant-cross-reads
 - `GCSStorage` (prod) writes only to the firma's bucket; cross-firma reads return `NotFound`
 

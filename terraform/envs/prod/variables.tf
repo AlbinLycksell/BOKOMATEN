@@ -1,6 +1,6 @@
 variable "project_id" {
   type        = string
-  description = "GCP project id (e.g. svarsa-prod)"
+  description = "GCP project id (e.g. switchboard-prod)"
 }
 
 variable "region" {
@@ -22,29 +22,29 @@ variable "postgres_tier" {
 variable "postgres_app_password" {
   type        = string
   sensitive   = true
-  description = "Application role password (svarsa_app)"
+  description = "Application role password (switchboard_app)"
 }
 
 variable "app_image" {
   type        = string
   description = "Artifact Registry image for application backend"
-  default     = "europe-west4-docker.pkg.dev/PROJECT/svarsa/app:latest"
+  default     = "europe-west4-docker.pkg.dev/PROJECT/switchboard/app:latest"
 }
 
 variable "bridge_image" {
   type        = string
   description = "Artifact Registry image for realtime bridge"
-  default     = "europe-west4-docker.pkg.dev/PROJECT/svarsa/bridge:latest"
+  default     = "europe-west4-docker.pkg.dev/PROJECT/switchboard/bridge:latest"
 }
 
 variable "app_domain" {
   type    = string
-  default = "app.svarsa.se"
+  default = "app.switchboard.se"
 }
 
 variable "bridge_domain" {
   type    = string
-  default = "bridge.svarsa.se"
+  default = "bridge.switchboard.se"
 }
 
 variable "initial_secrets" {

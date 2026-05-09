@@ -1,4 +1,4 @@
-# Svarsa Web
+# Switchboard Web
 
 Owner dashboard. Next.js 15 / React 19 / TypeScript / Tailwind v4. Nordic minimal — hairlines and tone, no shadows.
 

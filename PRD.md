@@ -1,10 +1,10 @@
-# PRD — Svarsa AI
+# PRD — Switchboard AI
 
 **Product Requirements Document**
 
 | Field | Value |
 |---|---|
-| Product name (working) | Svarsa AI |
+| Product name (working) | Switchboard AI |
 | Document version | 0.95 — Draft for review (revised) |
 | Document owner | Founding team |
 | Status | In review |
@@ -18,7 +18,7 @@
 
 ## 1. Executive summary
 
-Svarsa AI is a voice-first AI receptionist purpose-built for Swedish hantverkare — VVS-firmor, elektriker, snickare, plattsättare, and adjacent service trades — in the 1–10 anställda segment. It answers inbound phone calls 24/7 in natural Swedish using Google's **Gemini 3.1 Flash Live** model, triages each call in under 30 seconds, books work directly into the firm's existing calendar and affärssystem (Fortnox, Hantverksdata Next, Visma eEkonomi), and escalates true emergencies to the owner within 15 seconds via SMS and outbound call.
+Switchboard AI is a voice-first AI receptionist purpose-built for Swedish hantverkare — VVS-firmor, elektriker, snickare, plattsättare, and adjacent service trades — in the 1–10 anställda segment. It answers inbound phone calls 24/7 in natural Swedish using Google's **Gemini 3.1 Flash Live** model, triages each call in under 30 seconds, books work directly into the firm's existing calendar and affärssystem (Fortnox, Hantverksdata Next, Visma eEkonomi), and escalates true emergencies to the owner within 15 seconds via SMS and outbound call.
 
 The product is explicitly **additive, not replacement**: it integrates with the bokföring/CRM the firm already uses, plus a thin "call operations" web/mobile app for the owner to see what's happened, listen to recordings, and act on follow-ups. The wedge is the captured akut-jobb, the missed offert-förfrågan, and the ten-minute-per-call admin tax that the owner is paying today by stopping work to answer the phone on a job site.
 
@@ -128,11 +128,11 @@ Magnus owns Anderssons VVS AB in Bromma. Three anställda including himself, run
 
 ### 5.2 Lena, 44, kontor/administration (secondary user, "the back office")
 
-Magnus's sambo, runs the kontor 20 timmar/vecka. She's the actual user of Fortnox, Hantverksdata, and the kalender. Her relationship to Svarsa AI is: morning coffee, she opens the dashboard, sees the 11 calls handled overnight and during yesterday afternoon, triages the 3 that need follow-up, books the 2 that didn't quite resolve, and gets on with invoicing. She is not technical but is competent. If our product wastes her time or creates double-bookings, she will kill it.
+Magnus's sambo, runs the kontor 20 timmar/vecka. She's the actual user of Fortnox, Hantverksdata, and the kalender. Her relationship to Switchboard AI is: morning coffee, she opens the dashboard, sees the 11 calls handled overnight and during yesterday afternoon, triages the 3 that need follow-up, books the 2 that didn't quite resolve, and gets on with invoicing. She is not technical but is competent. If our product wastes her time or creates double-bookings, she will kill it.
 
 ### 5.3 Alex, 28, jourtekniker (tertiary user, "the on-call")
 
-Works for Magnus, takes the jourtelefon every other week. When Svarsa escalates an emergency, Alex is the human at the other end. He gets an SMS with structured info (address, problem, customer phone, when reported) and a "ring tillbaka"-button. If our escalation is unclear or duplicative, he will refuse to use the system.
+Works for Magnus, takes the jourtelefon every other week. When Switchboard escalates an emergency, Alex is the human at the other end. He gets an SMS with structured info (address, problem, customer phone, when reported) and a "ring tillbaka"-button. If our escalation is unclear or duplicative, he will refuse to use the system.
 
 ### 5.4 Inger, 71, kund (the caller)
 
@@ -146,31 +146,31 @@ Manages 14 properties for a BRF. Calls Anderssons VVS to book OVK-besiktningar i
 
 ### 6.1 Inbound emergency call (akut)
 
-Inger calls at 14:32. The number rings 1,5 times and Svarsa AI picks up.
+Inger calls at 14:32. The number rings 1,5 times and Switchboard AI picks up.
 
-> **Svarsa:** "Hej, du har kommit till Anderssons VVS, jag är deras digitala assistent. Hur kan jag hjälpa dig?"
+> **Switchboard:** "Hej, du har kommit till Anderssons VVS, jag är deras digitala assistent. Hur kan jag hjälpa dig?"
 >
 > **Inger:** "Hej, jag har en vattenläcka under diskbänken, det rinner ner på golvet."
 >
-> **Svarsa** *(recognizes "läcka" + "rinner" → potential emergency)*: "Det låter akut. Är det mycket vatten — har du behövt stänga av vattnet?"
+> **Switchboard** *(recognizes "läcka" + "rinner" → potential emergency)*: "Det låter akut. Är det mycket vatten — har du behövt stänga av vattnet?"
 >
 > **Inger:** "Ja, jag stängde av huvudkranen. Men det är ändå vått."
 >
-> **Svarsa:** "Bra att du stängt av. Vad är din adress?"
+> **Switchboard:** "Bra att du stängt av. Vad är din adress?"
 >
 > **Inger:** "Storgatan 14, lägenhet 3, Bromma."
 >
-> **Svarsa:** "Tack. Och ditt namn och telefonnummer så Magnus kan ringa upp?"
+> **Switchboard:** "Tack. Och ditt namn och telefonnummer så Magnus kan ringa upp?"
 >
 > **Inger:** "Inger Svensson, du har mitt nummer."
 >
-> **Svarsa** *(verifies CLI matches existing kund)*: "Tack Inger. Magnus är på ett jobb just nu men jag skickar honom ditt ärende direkt. Han ringer upp inom 15 minuter. Du har stängt av vattnet, det är bra. Annars — sätt en hink under och håll koll. Stämmer det att jag återkommer på 070-XXX-XXXX?"
+> **Switchboard** *(verifies CLI matches existing kund)*: "Tack Inger. Magnus är på ett jobb just nu men jag skickar honom ditt ärende direkt. Han ringer upp inom 15 minuter. Du har stängt av vattnet, det är bra. Annars — sätt en hink under och håll koll. Stämmer det att jag återkommer på 070-XXX-XXXX?"
 >
 > **Inger:** "Ja det stämmer. Tack."
 >
-> **Svarsa:** "Vi hörs snart. Hej då."
+> **Switchboard:** "Vi hörs snart. Hej då."
 
-In parallel, before the call ends, Svarsa has:
+In parallel, before the call ends, Switchboard has:
 
 - Called `triage_emergency()` → confirmed emergency, severity high
 - Called `lookup_customer("+46708...")` → found Inger as existing kund from a 2024 service
@@ -184,19 +184,19 @@ Total elapsed: 38 seconds. Magnus's phone buzzes 11 seconds after Inger said "l�
 
 Karim, the BRF-förvaltare, calls.
 
-> **Svarsa:** "Hej, du har kommit till Anderssons VVS …"
+> **Switchboard:** "Hej, du har kommit till Anderssons VVS …"
 >
 > **Karim:** "Hej, det är Karim på Brf Vasaliljan. Jag behöver boka in OVK i tre fastigheter."
 >
-> **Svarsa** *(`lookup_customer` finds match by org-nummer/phone)*: "Hej Karim, jag har dig här. Är det samma tre adresser som senast — Vasagatan 8, 10 och 12?"
+> **Switchboard** *(`lookup_customer` finds match by org-nummer/phone)*: "Hej Karim, jag har dig här. Är det samma tre adresser som senast — Vasagatan 8, 10 och 12?"
 >
 > **Karim:** "Plus Karlbergsvägen 22 nu också."
 >
-> **Svarsa** *(`check_availability` for OVK-jobb, 4 stops, 2-3 days)*: "Då lägger jag in fyra adresser. Jag har Magnus disponibel den 15:e och 16:e maj på förmiddag, eller den 22:a hela dagen — vad funkar bäst?"
+> **Switchboard** *(`check_availability` for OVK-jobb, 4 stops, 2-3 days)*: "Då lägger jag in fyra adresser. Jag har Magnus disponibel den 15:e och 16:e maj på förmiddag, eller den 22:a hela dagen — vad funkar bäst?"
 >
 > **Karim:** "Den 22:a."
 >
-> **Svarsa:** "Bokat: den 22:a maj, 08:00–16:00, fyra OVK-besiktningar. Jag skickar dig en bekräftelse på SMS och e-post. Något mer?"
+> **Switchboard:** "Bokat: den 22:a maj, 08:00–16:00, fyra OVK-besiktningar. Jag skickar dig en bekräftelse på SMS och e-post. Något mer?"
 >
 > **Karim:** "Nej, tack."
 
@@ -208,21 +208,21 @@ Caller asks something the AI shouldn't answer.
 
 > **Caller:** "Vad kostar det att byta en blandare?"
 >
-> **Svarsa:** "Det beror helt på vilken blandare och var den sitter, så jag vill inte chansa på pris. Kan jag boka in en kostnadsfri offert där Magnus tittar på det? Det tar 15 minuter på plats."
+> **Switchboard:** "Det beror helt på vilken blandare och var den sitter, så jag vill inte chansa på pris. Kan jag boka in en kostnadsfri offert där Magnus tittar på det? Det tar 15 minuter på plats."
 
 The AI is explicitly trained never to invent prices. This is a hard-coded behavior in the system prompt and verified in eval.
 
 ### 6.4 Owner morning routine
 
-08:00, Lena opens the Svarsa dashboard on her phone. Sees: 11 calls handled since 17:00 yesterday, 2 emergencies (both resolved by Magnus on-call), 4 bookings made, 3 leads to follow up, 2 informational with no action needed. Each call has a 2-sentence Swedish summary, full transcript, audio playback, and a "ring tillbaka" or "skicka offert"-knapp. Lena spends 12 minutes processing the queue. Pre-Svarsa, this was 90 minutes of phone-tag.
+08:00, Lena opens the Switchboard dashboard on her phone. Sees: 11 calls handled since 17:00 yesterday, 2 emergencies (both resolved by Magnus on-call), 4 bookings made, 3 leads to follow up, 2 informational with no action needed. Each call has a 2-sentence Swedish summary, full transcript, audio playback, and a "ring tillbaka" or "skicka offert"-knapp. Lena spends 12 minutes processing the queue. Pre-Switchboard, this was 90 minutes of phone-tag.
 
 ## 7. Functional requirements
 
 ### 7.1 Telephony layer
 
-**FR-T-1.** The system must accept inbound calls on a Swedish E.164 number (+46…) provisioned through 46elks (primary) or Twilio (fallback/international). Each kund-firma gets one or more dedicated numbers, or alternatively configures call-forwarding (vidarekoppling) from their existing number to the Svarsa number.
+**FR-T-1.** The system must accept inbound calls on a Swedish E.164 number (+46…) provisioned through 46elks (primary) or Twilio (fallback/international). Each kund-firma gets one or more dedicated numbers, or alternatively configures call-forwarding (vidarekoppling) from their existing number to the Switchboard number.
 
-**FR-T-2.** The system must support number-portability inbound (porta in befintligt nummer) for firms that want to keep their established number on Svarsa infrastructure. 46elks supports this for Swedish numbers.
+**FR-T-2.** The system must support number-portability inbound (porta in befintligt nummer) for firms that want to keep their established number on Switchboard infrastructure. 46elks supports this for Swedish numbers.
 
 **FR-T-3.** The system must play a brief verbal disclosure ("Detta samtal kan spelas in") at call connect, configurable per-firma, in line with GDPR Art. 6 and IMY (Integritetsskyddsmyndigheten) guidance.
 
@@ -407,15 +407,15 @@ The arrow into the Realtime Bridge from Gemini and the arrow out to the Applicat
 
 The default deployment uses **46elks** (Swedish company headquartered in Uppsala, infrastructure in SE), which we chose over Twilio for v1 because: (a) Swedish data residency end-to-end, (b) simpler GDPR posture for B2B sales, (c) lower latency to Gemini Vertex `europe-west` regions, (d) a more developer-friendly Swedish-language docs and support, (e) native support for porta-in of existing Swedish numbers.
 
-46elks Voice Streaming sends bidirectional audio to a WebSocket endpoint as base64-encoded G.711 μ-law at 8 kHz, with `sync` and `interrupt` control messages. The Svarsa Realtime Bridge presents an `wss://...` URL in the `voice_start` JSON when a call hits the firma's Svarsa-allocated number.
+46elks Voice Streaming sends bidirectional audio to a WebSocket endpoint as base64-encoded G.711 μ-law at 8 kHz, with `sync` and `interrupt` control messages. The Switchboard Realtime Bridge presents an `wss://...` URL in the `voice_start` JSON when a call hits the firma's Switchboard-allocated number.
 
 Inbound flow:
 
 1. Caller dials `+46-8-XXXX-XXXX`.
-2. 46elks receives the call, fetches `voice_start` from Svarsa's webhook URL.
-3. Svarsa returns JSON instructing 46elks to open a WebSocket to `wss://bridge.svarsa.se/ws/{firma_id}/{call_id}`.
+2. 46elks receives the call, fetches `voice_start` from Switchboard's webhook URL.
+3. Switchboard returns JSON instructing 46elks to open a WebSocket to `wss://bridge.switchboard.se/ws/{firma_id}/{call_id}`.
 4. 46elks opens the WebSocket and starts streaming μ-law audio frames.
-5. Svarsa accepts, performs μ-law → PCM 16 kHz transcoding, and forwards to Gemini Live.
+5. Switchboard accepts, performs μ-law → PCM 16 kHz transcoding, and forwards to Gemini Live.
 
 #### 8.2.2 Twilio (fallback / international)
 
@@ -886,7 +886,7 @@ Isolation is therefore **logical, not physical**, enforced rigorously at the dat
 
 **External API calls use tenant-scoped credentials.** When the Application Backend calls Fortnox or Hantverksdata for a given call, it loads that firma's OAuth tokens and uses them. Platform-level credentials masquerading as a tenant are explicitly forbidden by the integration adapter design.
 
-**Recordings and transcripts use per-tenant GCS buckets.** This is the one place where we trade pure shared-infrastructure economics for blast-radius reduction. Each firma gets its own bucket (`svarsa-recordings-{firma_id}-eu`) with a per-tenant CMEK key in Cloud KMS. The cost overhead is trivial (bucket-level metadata is essentially free) but the failure mode if a credential leaks is dramatically smaller, and it makes the customer-facing DPA story materially cleaner. Recordings contain the most sensitive data in the system (recorded customer voices, addresses, occasionally accidental personnummer despite the system prompt) and warrant the extra isolation.
+**Recordings and transcripts use per-tenant GCS buckets.** This is the one place where we trade pure shared-infrastructure economics for blast-radius reduction. Each firma gets its own bucket (`switchboard-recordings-{firma_id}-eu`) with a per-tenant CMEK key in Cloud KMS. The cost overhead is trivial (bucket-level metadata is essentially free) but the failure mode if a credential leaks is dramatically smaller, and it makes the customer-facing DPA story materially cleaner. Recordings contain the most sensitive data in the system (recorded customer voices, addresses, occasionally accidental personnummer despite the system prompt) and warrant the extra isolation.
 
 **Audit log is tenant-scoped and immutable.** Every action affecting a tenant's data is logged to an append-only `AuditLog` table partitioned by `firma_id`, accessible to the firma via the dashboard.
 
@@ -923,7 +923,7 @@ Isolation is therefore **logical, not physical**, enforced rigorously at the dat
 
 ### 9.1 Lawful basis
 
-For B2B traffic between the firma and a B2B customer, lawful basis is **legitimate interest** (Art. 6(1)(f)) under standard balancing test, with the firma as personuppgiftsansvarig and Svarsa as personuppgiftsbiträde. For B2C calls, the firma typically has either **kontraktuell grund** (Art. 6(1)(b)) when the kund is requesting a tjänst, or legitimate interest for new prospects, with explicit **opt-in samtycke** to recording disclosed at call connect.
+For B2B traffic between the firma and a B2B customer, lawful basis is **legitimate interest** (Art. 6(1)(f)) under standard balancing test, with the firma as personuppgiftsansvarig and Switchboard as personuppgiftsbiträde. For B2C calls, the firma typically has either **kontraktuell grund** (Art. 6(1)(b)) when the kund is requesting a tjänst, or legitimate interest for new prospects, with explicit **opt-in samtycke** to recording disclosed at call connect.
 
 ### 9.2 Recording consent
 
@@ -1048,7 +1048,7 @@ At Starter (200 samtal × 2,1 = 420 SEK COGS, 1 495 SEK ARR), gross margin ~72%.
 
 The following are not blockers but require resolution before or during Phase 1.
 
-- **Voice selection:** Do we ship with a single Svarsa-branded voice, or let firmor choose from 4–6 prebuilt? Tradeoff: brand consistency vs perceived ownership. Recommendation: 3 default options (warm female, neutral male, energetic young), no clones at launch.
+- **Voice selection:** Do we ship with a single Switchboard-branded voice, or let firmor choose from 4–6 prebuilt? Tradeoff: brand consistency vs perceived ownership. Recommendation: 3 default options (warm female, neutral male, energetic young), no clones at launch.
 - **Recording consent — opt-in or opt-out?** Swedish lag tolererar opt-out för B2B; for B2C we lean opt-in via disclosure. Confirm with juridik before pilot.
 - **Pricing — flat eller per-call?** Hybrid is what we've designed. Should we offer pure pay-as-you-go for occasional users? Risk of cannibalizing Starter.
 - **Outbound calling:** v1 is inbound-only with limited callbacks. When do we open up outbound (e.g., proaktiv återkoppling efter avslutat jobb)? Regulatory implications are nontrivial.

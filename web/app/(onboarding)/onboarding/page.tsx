@@ -44,10 +44,10 @@ export default function OnboardingPage() {
       <div className="mx-auto max-w-3xl">
         <header className="mb-8">
           <h1 className="text-2xl font-semibold text-text-strong tracking-tight">
-            Välkommen till Svarsa AI
+            Välkommen till Switchboard AI
           </h1>
           <p className="mt-2 text-sm text-text-muted">
-            Vi hjälper dig sätta upp Svarsa AI på 30 minuter. När du är klar
+            Vi hjälper dig sätta upp Switchboard AI på 30 minuter. När du är klar
             börjar AI:n svara på dina samtal redan i kväll.
           </p>
         </header>

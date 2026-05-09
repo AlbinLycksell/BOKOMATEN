@@ -10,7 +10,7 @@ JSONL, one labeled call per row:
 {"call_id":"...","transcript":[{"role":"caller","text":"..."},{"role":"ai","text":"..."}],"expected_intent":"akut","expected_severity":"high","expected_tools":["lookup_customer","triage_emergency","escalate_to_owner"],"expected_recommended_action":"escalate_now","trade":"vvs","notes":"..."}
 ```
 
-Storage: `gs://svarsa-eval-dataset/v1/calls.jsonl`. Annotated by Founders + a Swedish-speaking VA. Sample shipped with the foundation: `backend/eval/sample.jsonl`.
+Storage: `gs://switchboard-eval-dataset/v1/calls.jsonl`. Annotated by Founders + a Swedish-speaking VA. Sample shipped with the foundation: `backend/eval/sample.jsonl`.
 
 ## Running locally
 
@@ -23,10 +23,10 @@ uv run run-eval eval/sample.jsonl --slack-webhook "$SLACK_WEBHOOK"
 
 ## Weekly Slack digest
 
-GitHub Actions workflow `eval-weekly.yml` runs Sunday 06:00 UTC. Posts a summary to `#svarsa-eval`:
+GitHub Actions workflow `eval-weekly.yml` runs Sunday 06:00 UTC. Posts a summary to `#switchboard-eval`:
 
 ```
-*Svarsa AI eval — n=523*
+*Switchboard AI eval — n=523*
   Intent accuracy: 91.2%
   Severity accuracy: 88.7%
   Emergency false negatives: 0/47
@@ -55,7 +55,7 @@ When CI fails:
 2. Each failing call's id maps back to the dashboard (or to the eval-recordings bucket if not from a real call).
 3. Replay the transcript through the bridge in dev:
    ```bash
-   uv run python -m svarsa.eval.runner_cli --replay <call-id>
+   uv run python -m switchboard.eval.runner_cli --replay <call-id>
    ```
    (Helper to be added if needed; for MVP the failure list + transcript inspection is sufficient.)
 4. If the failure is a model regression, check recent prompt changes (`bridge/system_prompt.py`) or persona corrections (`Firma.settings.persona_corrections`).
@@ -67,4 +67,4 @@ A separate metric stream from Eval — but related. PRD §8.4 budget: p95 < 200 
 
 `GET /api/metrics/tools/latency?hours=24` returns per-tool stats over the last N hours. The dashboard pings this hourly; SLA breaches surface as Sentry alerts via `services.sla_service.detect_breaches`.
 
-Source: `backend/src/svarsa/services/sla_service.py`, `backend/src/svarsa/api/routes_metrics.py`.
+Source: `backend/src/switchboard/services/sla_service.py`, `backend/src/switchboard/api/routes_metrics.py`.

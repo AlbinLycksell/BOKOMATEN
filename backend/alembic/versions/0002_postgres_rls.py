@@ -5,7 +5,7 @@ Revises: 0001
 Create Date: 2026-05-09
 
 Postgres-only. On SQLite this is a no-op so dev tests still pass.
-The application connects with role `svarsa_app` which has no BYPASSRLS.
+The application connects with role `switchboard_app` which has no BYPASSRLS.
 Every connection is opened with `SET app.firma_id = '<id>'` by the
 SQLAlchemy `checkout` listener in `db/session.py`.
 """
@@ -42,8 +42,8 @@ def upgrade() -> None:
         """
         DO $$
         BEGIN
-          IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'svarsa_app') THEN
-            CREATE ROLE svarsa_app NOLOGIN;
+          IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'switchboard_app') THEN
+            CREATE ROLE switchboard_app NOLOGIN;
           END IF;
         END$$;
         """
@@ -52,7 +52,7 @@ def upgrade() -> None:
     for tbl in TENANT_TABLES:
         op.execute(f"ALTER TABLE {tbl} ENABLE ROW LEVEL SECURITY")
         op.execute(f"ALTER TABLE {tbl} FORCE ROW LEVEL SECURITY")
-        op.execute(f"GRANT SELECT, INSERT, UPDATE, DELETE ON {tbl} TO svarsa_app")
+        op.execute(f"GRANT SELECT, INSERT, UPDATE, DELETE ON {tbl} TO switchboard_app")
         op.execute(
             f"""
             CREATE POLICY firma_isolation ON {tbl}
@@ -63,8 +63,8 @@ def upgrade() -> None:
 
     # firma is referenced by every other table; readable by app role for joins
     # but writable only via explicit superuser tooling (onboarding flow).
-    op.execute("GRANT SELECT ON firma TO svarsa_app")
-    op.execute("GRANT USAGE ON SCHEMA public TO svarsa_app")
+    op.execute("GRANT SELECT ON firma TO switchboard_app")
+    op.execute("GRANT USAGE ON SCHEMA public TO switchboard_app")
 
 
 def downgrade() -> None:
@@ -74,5 +74,5 @@ def downgrade() -> None:
     for tbl in TENANT_TABLES:
         op.execute(f"DROP POLICY IF EXISTS firma_isolation ON {tbl}")
         op.execute(f"ALTER TABLE {tbl} DISABLE ROW LEVEL SECURITY")
-        op.execute(f"REVOKE ALL ON {tbl} FROM svarsa_app")
-    op.execute("REVOKE ALL ON firma FROM svarsa_app")
+        op.execute(f"REVOKE ALL ON {tbl} FROM switchboard_app")
+    op.execute("REVOKE ALL ON firma FROM switchboard_app")

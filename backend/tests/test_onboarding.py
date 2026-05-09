@@ -5,9 +5,9 @@ import os
 import pytest
 from sqlmodel import Session, select
 
-from svarsa.db.session import get_engine
-from svarsa.models import Firma, User
-from svarsa.services.onboarding_service import (
+from switchboard.db.session import get_engine
+from switchboard.models import Firma, User
+from switchboard.services.onboarding_service import (
     SignupNotAllowed,
     bootstrap_user,
 )
@@ -44,8 +44,8 @@ def test_bootstrap_returns_existing_user() -> None:
 
 
 def test_bootstrap_blocks_disallowed_domain(monkeypatch: pytest.MonkeyPatch) -> None:
-    os.environ["SVARSA_ALLOWED_SIGNUP_DOMAINS"] = '["siftlab.com"]'
-    from svarsa.core.config import get_settings
+    os.environ["SWITCHBOARD_ALLOWED_SIGNUP_DOMAINS"] = '["siftlab.com"]'
+    from switchboard.core.config import get_settings
 
     get_settings.cache_clear()
     try:
@@ -54,5 +54,5 @@ def test_bootstrap_blocks_disallowed_domain(monkeypatch: pytest.MonkeyPatch) -> 
                 s, google_sub="g-x", email="random@nowhere.example", name="X"
             )
     finally:
-        os.environ.pop("SVARSA_ALLOWED_SIGNUP_DOMAINS", None)
+        os.environ.pop("SWITCHBOARD_ALLOWED_SIGNUP_DOMAINS", None)
         get_settings.cache_clear()

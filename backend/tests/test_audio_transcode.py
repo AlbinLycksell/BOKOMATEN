@@ -4,7 +4,7 @@ import math
 
 import numpy as np
 
-from svarsa.bridge.audio import (
+from switchboard.bridge.audio import (
     GEMINI_IN_RATE,
     GEMINI_OUT_RATE,
     MULAW_RATE,

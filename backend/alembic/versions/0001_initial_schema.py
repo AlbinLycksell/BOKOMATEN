@@ -4,7 +4,7 @@ Revision ID: 0001
 Revises:
 Create Date: 2026-05-09
 
-Captures every table defined under `svarsa.models.*` as of the foundation
+Captures every table defined under `switchboard.models.*` as of the foundation
 commit. Forward-only per PRD §8.10 — downgrade drops everything (only
 useful in dev).
 """

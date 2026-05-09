@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from sqlmodel import Session, select
 
-from svarsa.db.session import get_engine
-from svarsa.models import Firma, User
-from svarsa.scripts.erase_tenant import erase_tenant
-from svarsa.services.onboarding_service import bootstrap_user
+from switchboard.db.session import get_engine
+from switchboard.models import Firma, User
+from switchboard.scripts.erase_tenant import erase_tenant
+from switchboard.services.onboarding_service import bootstrap_user
 
 
 def _make_tenant() -> str:

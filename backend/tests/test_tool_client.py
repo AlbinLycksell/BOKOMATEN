@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from sqlmodel import Session
 
-from svarsa.db.seed import DEMO_FIRMA_ID
-from svarsa.db.session import get_engine
-from svarsa.tools.client import LocalToolClient
+from switchboard.db.seed import DEMO_FIRMA_ID
+from switchboard.db.session import get_engine
+from switchboard.tools.client import LocalToolClient
 
 
 async def test_local_tool_client_dispatches_in_process() -> None:
@@ -40,7 +40,7 @@ async def test_local_tool_client_unknown_tool_returns_error() -> None:
 def test_dispatch_endpoint_is_mounted() -> None:
     from fastapi.testclient import TestClient
 
-    from svarsa.app import create_app
+    from switchboard.app import create_app
 
     with TestClient(create_app()) as client:
         r = client.post(

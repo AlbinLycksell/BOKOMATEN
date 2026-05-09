@@ -3,7 +3,7 @@ import type { TranscriptSegmentRead } from "@/lib/api-models";
 
 const ROLE_LABEL: Record<TranscriptSegmentRead["role"], string> = {
   caller: "Kund",
-  ai: "Svarsa",
+  ai: "Switchboard",
   system: "System",
 };
 

@@ -4,9 +4,9 @@
 
 | Service | Cadence | Trigger | Strategy | Rollback |
 |---|---|---|---|---|
-| `svarsa-app` (Application Backend) | hourly during business hours | merge to `main`, paths `backend/**` | rolling, immediate 100% | `gcloud run services update-traffic --to-revisions <prev>=100` |
-| `svarsa-bridge` (Realtime Bridge) | weekly Sunday 04:00 CET | `gh workflow run deploy-bridge.yml` | canary 5% → 25% → 100% over 30 min | revert traffic split |
-| `svarsa-web` (Next.js dashboard) | hourly with backend | merge to `main`, paths `web/**` | rolling, 100% | redeploy previous image |
+| `switchboard-app` (Application Backend) | hourly during business hours | merge to `main`, paths `backend/**` | rolling, immediate 100% | `gcloud run services update-traffic --to-revisions <prev>=100` |
+| `switchboard-bridge` (Realtime Bridge) | weekly Sunday 04:00 CET | `gh workflow run deploy-bridge.yml` | canary 5% → 25% → 100% over 30 min | revert traffic split |
+| `switchboard-web` (Next.js dashboard) | hourly with backend | merge to `main`, paths `web/**` | rolling, 100% | redeploy previous image |
 
 Rationale per PRD §8.10. Active calls are 1–10 minutes long; the Bridge is the only service that can drop them, so its deploys are isolated.
 
@@ -15,9 +15,9 @@ Rationale per PRD §8.10. Active calls are 1–10 minutes long; the Bridge is th
 Cloud Run keeps revisions for 30 days. Revert traffic to the last known-good in <30 s:
 
 ```bash
-gcloud run revisions list --service svarsa-bridge --region europe-west4
-gcloud run services update-traffic svarsa-bridge \
-  --to-revisions "svarsa-bridge-<revision-id>=100" \
+gcloud run revisions list --service switchboard-bridge --region europe-west4
+gcloud run services update-traffic switchboard-bridge \
+  --to-revisions "switchboard-bridge-<revision-id>=100" \
   --region europe-west4
 ```
 
@@ -37,7 +37,7 @@ Never combine the two phases. Never write down-migrations beyond MVP — fix for
 |---|---|---|
 | `bridge-internal-token` | quarterly | `openssl rand -hex 32` → new Secret Manager version → redeploy both services |
 | `nextauth-secret` | quarterly | rotate, signs out all users (acceptable) |
-| `database-url` (password) | annually | rotate svarsa_app password, update Secret Manager, redeploy |
+| `database-url` (password) | annually | rotate switchboard_app password, update Secret Manager, redeploy |
 | `elks-api-password` | only on staff change | 46elks dashboard → regenerate |
 | `google-client-secret` | only on compromise | GCP Credentials → rotate |
 
@@ -82,8 +82,8 @@ DELETE FROM firma WHERE id = :id;
 Then per-tenant GCS bucket and KMS key:
 
 ```bash
-gsutil rm -r gs://svarsa-rec-<firma-lower>-europe-west4
-gcloud kms keys versions destroy --location europe-west4 --keyring svarsa --key firma-<id> --version <v>
+gsutil rm -r gs://switchboard-rec-<firma-lower>-europe-west4
+gcloud kms keys versions destroy --location europe-west4 --keyring switchboard --key firma-<id> --version <v>
 ```
 
 Audit log row written. 30-day SLA.
@@ -92,14 +92,14 @@ Audit log row written. 30-day SLA.
 
 ```bash
 # tail bridge logs
-gcloud beta logging tail 'resource.type="cloud_run_revision" AND resource.labels.service_name="svarsa-bridge"' --project svarsa-prod
+gcloud beta logging tail 'resource.type="cloud_run_revision" AND resource.labels.service_name="switchboard-bridge"' --project switchboard-prod
 
 # call replay (per-call trace, last 1h)
-gcloud logging read 'jsonPayload.call_id="01J..." AND timestamp>="2026-05-09T08:00:00Z"' --order=asc --project svarsa-prod
+gcloud logging read 'jsonPayload.call_id="01J..." AND timestamp>="2026-05-09T08:00:00Z"' --order=asc --project switchboard-prod
 
 # database shell via auth proxy
-gcloud sql connect svarsa-pg --user=svarsa_app --database=svarsa --quiet
+gcloud sql connect switchboard-pg --user=switchboard_app --database=switchboard --quiet
 
 # gcs object listing for a firma (signed URLs preferred — see Recording.signed_url)
-gsutil ls gs://svarsa-rec-<firma-lower>-europe-west4/calls/
+gsutil ls gs://switchboard-rec-<firma-lower>-europe-west4/calls/
 ```

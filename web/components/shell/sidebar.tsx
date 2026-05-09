@@ -14,7 +14,7 @@ export function Sidebar() {
           S
         </div>
         <div className="flex flex-col leading-tight">
-          <span className="text-sm font-semibold text-text-strong">Svarsa AI</span>
+          <span className="text-sm font-semibold text-text-strong">Switchboard AI</span>
           <span className="text-[11px] text-text-muted">Anderssons VVS AB</span>
         </div>
       </div>

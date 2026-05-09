@@ -14,7 +14,7 @@ export default function LoginPage() {
             <div className="h-10 w-10 rounded-md bg-accent text-on-accent grid place-items-center font-semibold">
               S
             </div>
-            <span className="text-base font-semibold text-text-strong">Svarsa AI</span>
+            <span className="text-base font-semibold text-text-strong">Switchboard AI</span>
           </div>
           <p className="text-sm text-text-muted">
             Logga in för att se inkommande samtal och hantera bokningar.
@@ -23,7 +23,7 @@ export default function LoginPage() {
             Logga in med Google
           </Button>
           <p className="text-[11px] text-text-faint">
-            Genom att logga in godkänner du Svarsas användarvillkor och dataskyddspolicy.
+            Genom att logga in godkänner du Switchboards användarvillkor och dataskyddspolicy.
           </p>
         </CardContent>
       </Card>

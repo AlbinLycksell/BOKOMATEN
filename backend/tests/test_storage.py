@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import timedelta
 from pathlib import Path
 
-from svarsa.integrations.storage import LocalStorage
+from switchboard.integrations.storage import LocalStorage
 
 
 def test_local_storage_round_trip(tmp_path: Path) -> None:

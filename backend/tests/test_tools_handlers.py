@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from sqlmodel import Session
 
-from svarsa.db.seed import DEMO_FIRMA_ID, seed_dev_data
-from svarsa.db.session import get_engine, init_db
-from svarsa.tools.handlers import ToolContext, dispatch
+from switchboard.db.seed import DEMO_FIRMA_ID, seed_dev_data
+from switchboard.db.session import get_engine, init_db
+from switchboard.tools.handlers import ToolContext, dispatch
 
 
 def _ctx() -> ToolContext:
@@ -76,7 +76,7 @@ def test_unknown_tool_returns_error() -> None:
 
 
 def test_tool_declarations_build_without_error() -> None:
-    from svarsa.tools.declarations import TOOL_DECLARATIONS
+    from switchboard.tools.declarations import TOOL_DECLARATIONS
 
     assert len(TOOL_DECLARATIONS) == 1
     decls = TOOL_DECLARATIONS[0].function_declarations or []

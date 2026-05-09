@@ -43,7 +43,7 @@ Per PRD §2 and §8.10. Two long-lived services share a single Python codebase.
 
 The Realtime Bridge holds telephony + Gemini WebSockets; the Application Backend holds tool handlers, domain logic, integrations, owner API. They are **separate Cloud Run services** so the Application Backend can deploy hourly without dropping live calls. Tool dispatch crosses the boundary over HTTPS on a private VPC connector.
 
-In dev (single-deployable mode) both factories live in the same codebase — `svarsa.app:create_app` mounts everything; `svarsa.bridge_app:create_bridge_app` is the prod-shape factory. Tool dispatch in dev defaults to in-process; in prod it's HTTP via `Settings.tool_dispatch_mode = "http"`.
+In dev (single-deployable mode) both factories live in the same codebase — `switchboard.app:create_app` mounts everything; `switchboard.bridge_app:create_bridge_app` is the prod-shape factory. Tool dispatch in dev defaults to in-process; in prod it's HTTP via `Settings.tool_dispatch_mode = "http"`.
 
 ## Service responsibilities
 

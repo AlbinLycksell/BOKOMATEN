@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from svarsa.services.redaction_service import redact
+from switchboard.services.redaction_service import redact
 
 
 def test_personnummer_yyyymmdd_dash() -> None:

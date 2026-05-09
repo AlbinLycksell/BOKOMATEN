@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from svarsa.eval import dataset as eval_dataset
-from svarsa.eval import runner as eval_runner
+from switchboard.eval import dataset as eval_dataset
+from switchboard.eval import runner as eval_runner
 
 
 def test_eval_runs_on_sample_dataset() -> None:

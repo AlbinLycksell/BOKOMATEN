@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
-from svarsa.app import create_app
-from svarsa.db.seed import DEMO_FIRMA_ID
+from switchboard.app import create_app
+from switchboard.db.seed import DEMO_FIRMA_ID
 
 
 def _client() -> TestClient:

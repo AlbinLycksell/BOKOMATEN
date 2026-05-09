@@ -12,8 +12,8 @@ Browser → NextAuth (web) → Google OAuth → JWT cookie + JWKS endpoint
 ```
 
 - NextAuth route: `web/app/api/auth/[...nextauth]/route.ts`
-- Backend verification: `backend/src/svarsa/core/auth.py`
-- Middleware that binds the firma context: `backend/src/svarsa/core/middleware.py`
+- Backend verification: `backend/src/switchboard/core/auth.py`
+- Middleware that binds the firma context: `backend/src/switchboard/core/middleware.py`
 
 The `firma_id` claim is stamped by the NextAuth `jwt` callback. Production extends this to look up the user's firma from a `users` table — current implementation hard-codes the demo firma until the multi-firma data model lands.
 
@@ -21,18 +21,18 @@ The `firma_id` claim is stamped by the NextAuth `jwt` callback. Production exten
 
 | Var | Web | Backend | Source |
 |---|---|---|---|
-| `NEXTAUTH_URL` | ✓ | — | `https://app.svarsa.se` |
+| `NEXTAUTH_URL` | ✓ | — | `https://app.switchboard.se` |
 | `NEXTAUTH_SECRET` | ✓ | — | `openssl rand -base64 32` |
 | `GOOGLE_CLIENT_ID` | ✓ | — | GCP Credentials |
 | `GOOGLE_CLIENT_SECRET` | ✓ | — | GCP Credentials |
-| `SVARSA_AUTH_MODE` | — | ✓ | `jwks` in prod, `dev_header` in dev |
-| `SVARSA_AUTH_JWKS_URL` | — | ✓ | `https://app.svarsa.se/api/auth/jwks` |
-| `SVARSA_AUTH_AUDIENCE` | — | ✓ | `svarsa-backend` |
-| `SVARSA_AUTH_ISSUER` | — | ✓ | `https://app.svarsa.se` |
+| `SWITCHBOARD_AUTH_MODE` | — | ✓ | `jwks` in prod, `dev_header` in dev |
+| `SWITCHBOARD_AUTH_JWKS_URL` | — | ✓ | `https://app.switchboard.se/api/auth/jwks` |
+| `SWITCHBOARD_AUTH_AUDIENCE` | — | ✓ | `switchboard-backend` |
+| `SWITCHBOARD_AUTH_ISSUER` | — | ✓ | `https://app.switchboard.se` |
 
 ## Dev: header-based shim
 
-`SVARSA_AUTH_MODE=dev_header` (default in dev). The backend reads `X-Firma-Id` and binds it. Convenient for local testing without a full OAuth round-trip. Production rejects this path (the middleware refuses to honor `X-Firma-Id` when `auth_mode=jwks`).
+`SWITCHBOARD_AUTH_MODE=dev_header` (default in dev). The backend reads `X-Firma-Id` and binds it. Convenient for local testing without a full OAuth round-trip. Production rejects this path (the middleware refuses to honor `X-Firma-Id` when `auth_mode=jwks`).
 
 ## Internal calls (Bridge → Backend)
 

@@ -22,7 +22,7 @@ jobs:
       - name: run eval
         working-directory: backend
         env:
-          SVARSA_EVAL_SLACK_WEBHOOK: ${{ secrets.SVARSA_EVAL_SLACK_WEBHOOK }}
+          SWITCHBOARD_EVAL_SLACK_WEBHOOK: ${{ secrets.SWITCHBOARD_EVAL_SLACK_WEBHOOK }}
         run: |
           DATASET="${{ inputs.dataset || 'eval/sample.jsonl' }}"
           uv run run-eval "$DATASET" --fail-below 0.85 --fail-emergency-fn 0

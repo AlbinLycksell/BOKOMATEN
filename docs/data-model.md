@@ -1,6 +1,6 @@
 # Data model
 
-Mirror of PRD §8.6, materialized in SQLModel under `backend/src/svarsa/models/`.
+Mirror of PRD §8.6, materialized in SQLModel under `backend/src/switchboard/models/`.
 
 ## ER overview
 

@@ -8,7 +8,7 @@ import type {
 
 const API_BASE =
   typeof window === "undefined"
-    ? process.env.SVARSA_API_BASE ?? "http://127.0.0.1:8000"
+    ? process.env.SWITCHBOARD_API_BASE ?? "http://127.0.0.1:8000"
     : "/api/proxy" in window
       ? "/api/proxy"
       : "";

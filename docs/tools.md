@@ -1,6 +1,6 @@
 # Tool catalog
 
-The 12 functions Gemini Live can invoke during a call. Source of truth: `backend/src/svarsa/tools/schemas.py`.
+The 12 functions Gemini Live can invoke during a call. Source of truth: `backend/src/switchboard/tools/schemas.py`.
 
 Each tool has typed args + result Pydantic models, a Swedish description visible to the model, and a handler in `tools/handlers.py` that routes to a `services/*` function.
 

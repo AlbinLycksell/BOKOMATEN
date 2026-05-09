@@ -1,7 +1,7 @@
 .PHONY: help install test typecheck build dev backend web openapi clean
 
 help:
-	@echo "Svarsa AI — common dev commands"
+	@echo "Switchboard AI — common dev commands"
 	@echo ""
 	@echo "  make install        Install backend + web dependencies"
 	@echo "  make test           Run backend tests"
@@ -27,14 +27,14 @@ build:
 	cd web && pnpm build
 
 backend:
-	cd backend && uv run uvicorn svarsa.app:create_app --factory --reload --port 8000
+	cd backend && uv run uvicorn switchboard.app:create_app --factory --reload --port 8000
 
 web:
 	cd web && pnpm dev
 
 dev:
 	@echo "Starting backend on :8000 and web on :3000…"
-	@(cd backend && uv run uvicorn svarsa.app:create_app --factory --reload --port 8000) & \
+	@(cd backend && uv run uvicorn switchboard.app:create_app --factory --reload --port 8000) & \
 	 (cd web && pnpm dev) & \
 	 wait
 
@@ -43,5 +43,5 @@ openapi:
 	cd web && pnpm gen:api
 
 clean:
-	rm -rf backend/.pytest_cache backend/.ruff_cache backend/openapi.json backend/svarsa.db backend/svarsa.db-journal
+	rm -rf backend/.pytest_cache backend/.ruff_cache backend/openapi.json backend/switchboard.db backend/switchboard.db-journal
 	rm -rf web/.next web/.turbo web/lib/openapi.json

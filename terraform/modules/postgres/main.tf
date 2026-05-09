@@ -8,7 +8,7 @@ variable "app_password" {
 }
 
 resource "google_sql_database_instance" "primary" {
-  name                = "svarsa-pg"
+  name                = "switchboard-pg"
   project             = var.project_id
   region              = var.region
   database_version    = "POSTGRES_16"
@@ -39,14 +39,14 @@ resource "google_sql_database_instance" "primary" {
   }
 }
 
-resource "google_sql_database" "svarsa" {
-  name     = "svarsa"
+resource "google_sql_database" "switchboard" {
+  name     = "switchboard"
   project  = var.project_id
   instance = google_sql_database_instance.primary.name
 }
 
 resource "google_sql_user" "app" {
-  name     = "svarsa_app"
+  name     = "switchboard_app"
   project  = var.project_id
   instance = google_sql_database_instance.primary.name
   password = var.app_password

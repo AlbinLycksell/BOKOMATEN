@@ -5,7 +5,7 @@ The hot path. Every concurrent call is one bridge instance with two long-lived W
 1. **Provider** ↔ Bridge — μ-law 8 kHz mono base64 frames, 20 ms each.
 2. **Bridge** ↔ Gemini Live — PCM 16 kHz mono on input, PCM 24 kHz mono on output.
 
-Source: `backend/src/svarsa/bridge/`.
+Source: `backend/src/switchboard/bridge/`.
 
 ## Lifecycle
 
@@ -42,7 +42,7 @@ Both 46elks and Twilio Media Streams support a base64 μ-law payload. The bridge
 | server → client | `summary_ready` | `{call_id: string}` |
 | server → client | `error` | `{reason: string}` |
 
-A provider adapter (`backend/src/svarsa/integrations/<provider>.py` — to be added) converts `<Stream>` framing into this shape and back.
+A provider adapter (`backend/src/switchboard/integrations/<provider>.py` — to be added) converts `<Stream>` framing into this shape and back.
 
 ## Audio pipeline
 

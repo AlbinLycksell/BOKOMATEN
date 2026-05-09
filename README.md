@@ -1,4 +1,4 @@
-# Svarsa AI
+# Switchboard AI
 
 > Voice-first AI receptionist for Swedish hantverkare — VVS, el, snickeri. Answers calls 24/7 in natural Swedish, triages, books work directly into the firm's affärssystem, escalates emergencies in seconds.
 
@@ -21,7 +21,7 @@ PRD.md     Product Requirements Document
 ```bash
 # backend
 cd backend && uv sync --extra dev
-uv run uvicorn svarsa.app:create_app --factory --reload --port 8000
+uv run uvicorn switchboard.app:create_app --factory --reload --port 8000
 
 # web (separate shell)
 cd web && pnpm install

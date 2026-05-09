@@ -2,13 +2,13 @@ variable "project_id" { type = string }
 variable "region" { type = string }
 
 resource "google_compute_network" "vpc" {
-  name                    = "svarsa-vpc"
+  name                    = "switchboard-vpc"
   project                 = var.project_id
   auto_create_subnetworks = false
 }
 
 resource "google_compute_subnetwork" "default" {
-  name                     = "svarsa-subnet"
+  name                     = "switchboard-subnet"
   project                  = var.project_id
   region                   = var.region
   network                  = google_compute_network.vpc.self_link
@@ -17,7 +17,7 @@ resource "google_compute_subnetwork" "default" {
 }
 
 resource "google_compute_subnetwork" "connector" {
-  name          = "svarsa-conn-subnet"
+  name          = "switchboard-conn-subnet"
   project       = var.project_id
   region        = var.region
   network       = google_compute_network.vpc.self_link
@@ -25,7 +25,7 @@ resource "google_compute_subnetwork" "connector" {
 }
 
 resource "google_vpc_access_connector" "connector" {
-  name          = "svarsa-connector"
+  name          = "switchboard-connector"
   project       = var.project_id
   region        = var.region
   subnet {
@@ -38,7 +38,7 @@ resource "google_vpc_access_connector" "connector" {
 }
 
 resource "google_compute_global_address" "private_services" {
-  name          = "svarsa-private-services"
+  name          = "switchboard-private-services"
   project       = var.project_id
   purpose       = "VPC_PEERING"
   address_type  = "INTERNAL"

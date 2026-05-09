@@ -5,7 +5,7 @@ Python 3.13 / FastAPI / Pydantic v2 / SQLModel. Managed by `uv`. Lives in `backe
 ## Layout
 
 ```
-backend/src/svarsa/
+backend/src/switchboard/
 ├── core/         config, structlog, ULIDs, time, tenant context, middleware
 ├── db/           SQLModel engine, session factory, dev seed
 ├── models/       Pydantic + SQLModel tables (PRD §8.6 + audit_log)
@@ -20,7 +20,7 @@ backend/src/svarsa/
 └── bridge_app.py Realtime Bridge factory — telephony WS + health
 ```
 
-Two FastAPI factories share the same package per PRD §2 (single language, two services). Dev runs the umbrella `svarsa.app:create_app` which mounts everything; prod runs them as separate Cloud Run services with `Settings.tool_dispatch_mode = "http"`.
+Two FastAPI factories share the same package per PRD §2 (single language, two services). Dev runs the umbrella `switchboard.app:create_app` which mounts everything; prod runs them as separate Cloud Run services with `Settings.tool_dispatch_mode = "http"`.
 
 `tests/` mirrors the modules above. `conftest.py` isolates each session into a tmpdir SQLite and seeds the demo firma.
 
@@ -35,17 +35,17 @@ Two FastAPI factories share the same package per PRD §2 (single language, two s
 
 ### Logging
 
-`structlog` everywhere. Use `from svarsa.core.logging import get_logger; log = get_logger("svarsa.<mod>")`. Bound contextvars (`call_id`, `firma_id`) propagate via `merge_contextvars`. JSON output behind `SVARSA_LOG_JSON=true` for prod.
+`structlog` everywhere. Use `from switchboard.core.logging import get_logger; log = get_logger("switchboard.<mod>")`. Bound contextvars (`call_id`, `firma_id`) propagate via `merge_contextvars`. JSON output behind `SWITCHBOARD_LOG_JSON=true` for prod.
 
 ### Configuration
 
-All settings come from `Settings` in `core.config` — populated from `.env` then `.env.local` (see `.env` precedence in this repo). Keys are prefixed `SVARSA_*` except `GEMINI_API_KEY`. Never read `os.environ` directly outside `core.config`.
+All settings come from `Settings` in `core.config` — populated from `.env` then `.env.local` (see `.env` precedence in this repo). Keys are prefixed `SWITCHBOARD_*` except `GEMINI_API_KEY`. Never read `os.environ` directly outside `core.config`.
 
 Production-relevant flags:
 
-- `SVARSA_TOOL_DISPATCH_MODE=http` — bridge calls Application Backend over HTTPS instead of in-process
-- `SVARSA_APPLICATION_BACKEND_URL=https://app.svarsa.se` — target for HTTP dispatch
-- `SVARSA_BRIDGE_INTERNAL_TOKEN=<secret>` — verified by `/api/tools/dispatch`
+- `SWITCHBOARD_TOOL_DISPATCH_MODE=http` — bridge calls Application Backend over HTTPS instead of in-process
+- `SWITCHBOARD_APPLICATION_BACKEND_URL=https://app.switchboard.se` — target for HTTP dispatch
+- `SWITCHBOARD_BRIDGE_INTERNAL_TOKEN=<secret>` — verified by `/api/tools/dispatch`
 
 ### Tenant context
 
@@ -84,7 +84,7 @@ A service is a module under `services/`. Public functions take a `Session` (or p
 ```bash
 cd backend
 uv sync --extra dev
-uv run uvicorn svarsa.app:create_app --factory --reload --port 8000
+uv run uvicorn switchboard.app:create_app --factory --reload --port 8000
 ```
 
 OpenAPI is at `http://127.0.0.1:8000/docs`. Health check is `/health`. The bridge WebSocket is at `/ws/bridge/{firma_id}/{call_id}`.

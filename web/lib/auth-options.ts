@@ -2,10 +2,10 @@ import type { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 
 const BACKEND_URL =
-  process.env.SVARSA_BACKEND_INTERNAL_URL ?? "http://127.0.0.1:8000";
-const BOOTSTRAP_TOKEN = process.env.SVARSA_BOOTSTRAP_INTERNAL_TOKEN ?? "";
+  process.env.SWITCHBOARD_BACKEND_INTERNAL_URL ?? "http://127.0.0.1:8000";
+const BOOTSTRAP_TOKEN = process.env.SWITCHBOARD_BOOTSTRAP_INTERNAL_TOKEN ?? "";
 const FALLBACK_FIRMA_ID =
-  process.env.SVARSA_FALLBACK_FIRMA_ID ?? "01J0000FIRM0ANDERSSONSVVS00";
+  process.env.SWITCHBOARD_FALLBACK_FIRMA_ID ?? "01J0000FIRM0ANDERSSONSVVS00";
 
 interface BootstrapResponse {
   user_id: string;

@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from sqlmodel import Session, select
 
-from svarsa.db.seed import DEMO_FIRMA_ID, seed_dev_data
-from svarsa.db.session import get_engine, init_db
-from svarsa.models import Call, Customer, Firma
+from switchboard.db.seed import DEMO_FIRMA_ID, seed_dev_data
+from switchboard.db.session import get_engine, init_db
+from switchboard.models import Call, Customer, Firma
 
 
 def test_seed_inserts_demo_firma_with_calls() -> None:

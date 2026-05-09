@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
-from svarsa.app import create_app
+from switchboard.app import create_app
 
 
 def test_health_returns_ok() -> None:

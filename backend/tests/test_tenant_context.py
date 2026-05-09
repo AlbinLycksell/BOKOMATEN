@@ -4,12 +4,12 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session, select
 
-from svarsa.app import create_app
-from svarsa.core.tenant import firma_context, get_firma_id, require_firma_id
-from svarsa.db.seed import DEMO_FIRMA_ID
-from svarsa.db.session import get_engine
-from svarsa.models import AuditLog
-from svarsa.services import audit_service
+from switchboard.app import create_app
+from switchboard.core.tenant import firma_context, get_firma_id, require_firma_id
+from switchboard.db.seed import DEMO_FIRMA_ID
+from switchboard.db.session import get_engine
+from switchboard.models import AuditLog
+from switchboard.services import audit_service
 
 
 def test_get_firma_id_unset_by_default() -> None:

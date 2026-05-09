@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from sqlmodel import Session
 
-from svarsa.agents.post_call_summary import summarize_call, summarize_transcript
-from svarsa.core.ids import new_id
-from svarsa.db.seed import DEMO_FIRMA_ID, seed_dev_data
-from svarsa.db.session import get_engine, init_db
-from svarsa.models import Call, CallStatus, Intent, TranscriptRole, TranscriptSegment
+from switchboard.agents.post_call_summary import summarize_call, summarize_transcript
+from switchboard.core.ids import new_id
+from switchboard.db.seed import DEMO_FIRMA_ID, seed_dev_data
+from switchboard.db.session import get_engine, init_db
+from switchboard.models import Call, CallStatus, Intent, TranscriptRole, TranscriptSegment
 
 
 def test_heuristic_summarizer_on_emergency_keywords() -> None:

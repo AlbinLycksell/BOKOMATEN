@@ -28,11 +28,11 @@ resource "google_project_service" "enabled" {
   disable_on_destroy = false
 }
 
-resource "google_artifact_registry_repository" "svarsa" {
+resource "google_artifact_registry_repository" "switchboard" {
   project       = var.project_id
   location      = var.region
-  repository_id = "svarsa"
+  repository_id = "switchboard"
   format        = "DOCKER"
-  description   = "Svarsa Cloud Run images"
+  description   = "Switchboard Cloud Run images"
   depends_on    = [google_project_service.enabled]
 }

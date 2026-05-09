@@ -14,7 +14,7 @@ permissions:
 
 env:
   GCP_REGION: europe-west4
-  SERVICE: svarsa-app
+  SERVICE: switchboard-app
   IMAGE_BASE: europe-west4-docker.pkg.dev
 
 jobs:
@@ -36,7 +36,7 @@ jobs:
 
       - name: build and push
         run: |
-          IMAGE="${IMAGE_BASE}/${{ secrets.GCP_PROJECT }}/svarsa/app:${GITHUB_SHA::12}"
+          IMAGE="${IMAGE_BASE}/${{ secrets.GCP_PROJECT }}/switchboard/app:${GITHUB_SHA::12}"
           docker build -f backend/Dockerfile.app -t "$IMAGE" backend
           docker push "$IMAGE"
           echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"

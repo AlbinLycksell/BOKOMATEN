@@ -5,9 +5,9 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from svarsa.bridge.audio import GEMINI_OUT_RATE
-from svarsa.integrations.storage import LocalStorage
-from svarsa.services.recording_service import (
+from switchboard.bridge.audio import GEMINI_OUT_RATE
+from switchboard.integrations.storage import LocalStorage
+from switchboard.services.recording_service import (
     RecordingBuffer,
     finalize_and_persist,
 )

@@ -32,7 +32,7 @@ Two terminals.
 
 ```bash
 cd backend
-uv run uvicorn svarsa.app:create_app --factory --reload --port 8000
+uv run uvicorn switchboard.app:create_app --factory --reload --port 8000
 # OpenAPI:    http://127.0.0.1:8000/docs
 # Health:     http://127.0.0.1:8000/health
 # Inbox WS:   ws://127.0.0.1:8000/ws/inbox/<firma_id>
@@ -47,13 +47,13 @@ The first run seeds Anderssons VVS AB with Inger, Karim, Pelle, three demo calls
 ```bash
 # Application Backend
 cd backend
-uv run uvicorn svarsa.app:create_app --factory --port 8000
+uv run uvicorn switchboard.app:create_app --factory --port 8000
 
 # Realtime Bridge — separate terminal, separate port
-SVARSA_TOOL_DISPATCH_MODE=http \
-SVARSA_APPLICATION_BACKEND_URL=http://127.0.0.1:8000 \
-SVARSA_BRIDGE_INTERNAL_TOKEN=dev-token \
-uv run uvicorn svarsa.bridge_app:create_bridge_app --factory --port 8001
+SWITCHBOARD_TOOL_DISPATCH_MODE=http \
+SWITCHBOARD_APPLICATION_BACKEND_URL=http://127.0.0.1:8000 \
+SWITCHBOARD_BRIDGE_INTERNAL_TOKEN=dev-token \
+uv run uvicorn switchboard.bridge_app:create_bridge_app --factory --port 8001
 ```
 
 This mirrors the production split where the two run as independent Cloud Run services with mTLS over a VPC connector.
@@ -92,15 +92,15 @@ pnpm dev   # http://localhost:3000
 
 | Want to | Path |
 |---|---|
-| Add a tool the AI can call | `backend/src/svarsa/tools/` (see `docs/tools.md`) |
-| Change emergency rules | `backend/src/svarsa/services/triage_service.py` |
-| Change the AI's system prompt | `backend/src/svarsa/bridge/system_prompt.py` |
-| Add an API route | `backend/src/svarsa/api/routes_<area>.py` |
+| Add a tool the AI can call | `backend/src/switchboard/tools/` (see `docs/tools.md`) |
+| Change emergency rules | `backend/src/switchboard/services/triage_service.py` |
+| Change the AI's system prompt | `backend/src/switchboard/bridge/system_prompt.py` |
+| Add an API route | `backend/src/switchboard/api/routes_<area>.py` |
 | Add a dashboard view | `web/app/(app)/<route>/page.tsx` (see `docs/frontend.md`) |
 | Tweak the design language | `web/styles/tokens.css` (see `docs/frontend.md`) |
-| Update the data model | `backend/src/svarsa/models/` (see `docs/data-model.md`) |
+| Update the data model | `backend/src/switchboard/models/` (see `docs/data-model.md`) |
 | Read the PRD | [`../PRD.md`](../PRD.md) |
-| Read the implementation plan | [`./superpowers/plans/2026-05-09-svarsa-mvp-foundation.md`](./superpowers/plans/2026-05-09-svarsa-mvp-foundation.md) |
+| Read the implementation plan | [`./superpowers/plans/2026-05-09-switchboard-mvp-foundation.md`](./superpowers/plans/2026-05-09-switchboard-mvp-foundation.md) |
 
 ## Troubleshooting
 

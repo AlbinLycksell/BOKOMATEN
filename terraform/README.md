@@ -1,4 +1,4 @@
-# Terraform — Svarsa GCP infrastructure
+# Terraform — Switchboard GCP infrastructure
 
 Cost-efficient single-region (`europe-west4`) deploy. Two Cloud Run services
 (Application Backend + Realtime Bridge), one Cloud SQL Postgres, GCS for

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from svarsa.models.enums import EmergencyIndicator, Severity, Trade
-from svarsa.services import triage_service
+from switchboard.models.enums import EmergencyIndicator, Severity, Trade
+from switchboard.services import triage_service
 
 
 def test_water_leak_with_running_water_is_high_severity() -> None:

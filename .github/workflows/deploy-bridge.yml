@@ -17,7 +17,7 @@ permissions:
 
 env:
   GCP_REGION: europe-west4
-  SERVICE: svarsa-bridge
+  SERVICE: switchboard-bridge
   IMAGE_BASE: europe-west4-docker.pkg.dev
 
 jobs:
@@ -41,11 +41,11 @@ jobs:
       - name: build and push
         run: |
           SHORT="${GITHUB_SHA::12}"
-          IMAGE="${IMAGE_BASE}/${{ secrets.GCP_PROJECT }}/svarsa/bridge:${SHORT}"
+          IMAGE="${IMAGE_BASE}/${{ secrets.GCP_PROJECT }}/switchboard/bridge:${SHORT}"
           docker build -f backend/Dockerfile.bridge -t "$IMAGE" backend
           docker push "$IMAGE"
           echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
-          echo "REVISION=svarsa-bridge-${SHORT}" >> "$GITHUB_ENV"
+          echo "REVISION=switchboard-bridge-${SHORT}" >> "$GITHUB_ENV"
 
       - name: deploy revision (no traffic)
         run: |

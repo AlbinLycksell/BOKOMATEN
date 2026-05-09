@@ -42,7 +42,7 @@ resource "google_service_account_iam_member" "wif" {
 # Minimum permissions per service per least-privilege.
 locals {
   service_roles = {
-    "svarsa-app" = [
+    "switchboard-app" = [
       "roles/run.invoker",
       "roles/cloudsql.client",
       "roles/secretmanager.secretAccessor",
@@ -51,7 +51,7 @@ locals {
       "roles/aiplatform.user",
       "roles/cloudtrace.agent",
     ]
-    "svarsa-bridge" = [
+    "switchboard-bridge" = [
       "roles/run.invoker",
       "roles/cloudsql.client",
       "roles/secretmanager.secretAccessor",

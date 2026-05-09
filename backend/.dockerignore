@@ -5,8 +5,8 @@
 __pycache__
 **/__pycache__
 *.pyc
-svarsa.db
-svarsa.db-journal
+switchboard.db
+switchboard.db-journal
 openapi.json
 recordings
 tests

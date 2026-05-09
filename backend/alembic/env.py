@@ -13,8 +13,8 @@ from alembic import context
 from sqlalchemy import engine_from_config, pool
 from sqlmodel import SQLModel
 
-from svarsa import models  # noqa: F401  register tables on import
-from svarsa.core.config import get_settings
+from switchboard import models  # noqa: F401  register tables on import
+from switchboard.core.config import get_settings
 
 config = context.config
 if config.config_file_name is not None:

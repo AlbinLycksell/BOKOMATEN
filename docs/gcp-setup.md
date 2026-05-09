@@ -7,18 +7,18 @@ One-time steps to bring up the production environment in `europe-west4`. Run by 
 - A GCP organization with billing attached.
 - `gcloud` CLI signed in as a user with `Project Creator` and `Billing Account User` on the org.
 - `terraform` ≥ 1.9.
-- A registered domain you'll point at the Cloud Run services (default: `svarsa.se`, with `app.svarsa.se` + `bridge.svarsa.se` subdomains).
+- A registered domain you'll point at the Cloud Run services (default: `switchboard.se`, with `app.switchboard.se` + `bridge.switchboard.se` subdomains).
 
 ## 1. Create the project
 
 ```bash
 ORG_ID=...
 BILLING=...
-gcloud projects create svarsa-prod \
+gcloud projects create switchboard-prod \
   --organization "$ORG_ID" \
-  --name "Svarsa AI Production"
-gcloud beta billing projects link svarsa-prod --billing-account "$BILLING"
-gcloud config set project svarsa-prod
+  --name "Switchboard AI Production"
+gcloud beta billing projects link switchboard-prod --billing-account "$BILLING"
+gcloud config set project switchboard-prod
 ```
 
 ## 2. Bootstrap Terraform state bucket (one-off)
@@ -26,7 +26,7 @@ gcloud config set project svarsa-prod
 The Terraform backend lives in GCS. Create the bucket before the first `terraform init`:
 
 ```bash
-gcloud storage buckets create gs://svarsa-tfstate \
+gcloud storage buckets create gs://switchboard-tfstate \
   --location=europe-west4 \
   --uniform-bucket-level-access \
   --enable-autoclass
@@ -35,7 +35,7 @@ gcloud storage buckets create gs://svarsa-tfstate \
 Copy `terraform/backend.tfvars.example` → `terraform/backend.tfvars`:
 
 ```
-bucket = "svarsa-tfstate"
+bucket = "switchboard-tfstate"
 prefix = "envs/prod"
 ```
 
@@ -53,7 +53,7 @@ terraform apply -var-file=prod.tfvars \
   -var="postgres_app_password=$(openssl rand -base64 32)"
 ```
 
-Save the password to 1Password as `Svarsa / Postgres app role` and put a copy into Secret Manager via:
+Save the password to 1Password as `Switchboard / Postgres app role` and put a copy into Secret Manager via:
 
 ```bash
 echo -n "$PASSWORD" | gcloud secrets versions add postgres-app-password --data-file=-
@@ -65,7 +65,7 @@ Secret Manager entries created empty by Terraform — populate them:
 
 | Secret | Source |
 |---|---|
-| `database-url` | `postgresql+psycopg://svarsa_app:<password>@<private-ip>:5432/svarsa?sslmode=require` |
+| `database-url` | `postgresql+psycopg://switchboard_app:<password>@<private-ip>:5432/switchboard?sslmode=require` |
 | `bridge-internal-token` | `openssl rand -hex 32` |
 | `elks-api-username` | 46elks dashboard → Account → API |
 | `elks-api-password` | 46elks dashboard → Account → API |
@@ -84,12 +84,12 @@ echo -n "<value>" | gcloud secrets versions add <secret-name> --data-file=-
 The Application Backend container runs `alembic upgrade head` on boot, so the first deploy migrates automatically. You can run it manually first to verify:
 
 ```bash
-gcloud sql connect svarsa-pg --user=svarsa_app --database=svarsa
+gcloud sql connect switchboard-pg --user=switchboard_app --database=switchboard
 # password from Secret Manager
 \q
 
 cd backend
-SVARSA_DATABASE_URL=postgresql+psycopg://svarsa_app:<pw>@127.0.0.1:5432/svarsa \
+SWITCHBOARD_DATABASE_URL=postgresql+psycopg://switchboard_app:<pw>@127.0.0.1:5432/switchboard \
   uv run alembic upgrade head
 ```
 
@@ -102,22 +102,22 @@ gcloud auth configure-docker europe-west4-docker.pkg.dev
 
 cd backend
 SHA=$(git rev-parse --short=12 HEAD)
-docker build -f Dockerfile.app    -t europe-west4-docker.pkg.dev/svarsa-prod/svarsa/app:$SHA .
-docker build -f Dockerfile.bridge -t europe-west4-docker.pkg.dev/svarsa-prod/svarsa/bridge:$SHA .
-docker push europe-west4-docker.pkg.dev/svarsa-prod/svarsa/app:$SHA
-docker push europe-west4-docker.pkg.dev/svarsa-prod/svarsa/bridge:$SHA
+docker build -f Dockerfile.app    -t europe-west4-docker.pkg.dev/switchboard-prod/switchboard/app:$SHA .
+docker build -f Dockerfile.bridge -t europe-west4-docker.pkg.dev/switchboard-prod/switchboard/bridge:$SHA .
+docker push europe-west4-docker.pkg.dev/switchboard-prod/switchboard/app:$SHA
+docker push europe-west4-docker.pkg.dev/switchboard-prod/switchboard/bridge:$SHA
 
 cd ../web
-docker build -t europe-west4-docker.pkg.dev/svarsa-prod/svarsa/web:$SHA .
-docker push europe-west4-docker.pkg.dev/svarsa-prod/svarsa/web:$SHA
+docker build -t europe-west4-docker.pkg.dev/switchboard-prod/switchboard/web:$SHA .
+docker push europe-west4-docker.pkg.dev/switchboard-prod/switchboard/web:$SHA
 ```
 
 ## 7. Deploy the images
 
 ```bash
-gcloud run deploy svarsa-app    --image europe-west4-docker.pkg.dev/svarsa-prod/svarsa/app:$SHA    --region europe-west4
-gcloud run deploy svarsa-bridge --image europe-west4-docker.pkg.dev/svarsa-prod/svarsa/bridge:$SHA --region europe-west4
-gcloud run deploy svarsa-web    --image europe-west4-docker.pkg.dev/svarsa-prod/svarsa/web:$SHA    --region europe-west4
+gcloud run deploy switchboard-app    --image europe-west4-docker.pkg.dev/switchboard-prod/switchboard/app:$SHA    --region europe-west4
+gcloud run deploy switchboard-bridge --image europe-west4-docker.pkg.dev/switchboard-prod/switchboard/bridge:$SHA --region europe-west4
+gcloud run deploy switchboard-web    --image europe-west4-docker.pkg.dev/switchboard-prod/switchboard/web:$SHA    --region europe-west4
 ```
 
 ## 8. DNS
@@ -136,9 +136,9 @@ Add the following repo secrets (Settings → Secrets and variables → Actions):
 
 | Name | Value |
 |---|---|
-| `GCP_PROJECT` | `svarsa-prod` |
+| `GCP_PROJECT` | `switchboard-prod` |
 | `GCP_WIF_PROVIDER` | `projects/<num>/locations/global/workloadIdentityPools/github/providers/github-provider` |
-| `GCP_DEPLOY_SA` | `svarsa-app@svarsa-prod.iam.gserviceaccount.com` |
+| `GCP_DEPLOY_SA` | `switchboard-app@switchboard-prod.iam.gserviceaccount.com` |
 | `NEXTAUTH_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | for `deploy-web.yml` if not using Secret Manager mounts |
 
 Push to `main` → `deploy-app` and `deploy-web` run automatically. `deploy-bridge` is workflow-dispatch-only (canary).
@@ -146,15 +146,15 @@ Push to `main` → `deploy-app` and `deploy-web` run automatically. `deploy-brid
 ## 10. Verify
 
 ```bash
-curl -i https://app.svarsa.se/health
-curl -i https://bridge.svarsa.se/health
-open https://app.svarsa.se/login   # web
+curl -i https://app.switchboard.se/health
+curl -i https://bridge.switchboard.se/health
+open https://app.switchboard.se/login   # web
 ```
 
 Logs:
 
 ```bash
-gcloud logging read 'resource.type="cloud_run_revision"' --limit 50 --project svarsa-prod
+gcloud logging read 'resource.type="cloud_run_revision"' --limit 50 --project switchboard-prod
 ```
 
 ## 11. Cost monitoring
@@ -164,7 +164,7 @@ Set up budget alerts:
 ```bash
 gcloud billing budgets create \
   --billing-account "$BILLING" \
-  --display-name "Svarsa pre-pilot" \
+  --display-name "Switchboard pre-pilot" \
   --budget-amount=500 \
   --threshold-rule=percent=0.5 \
   --threshold-rule=percent=0.8 \
