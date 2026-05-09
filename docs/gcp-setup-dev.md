@@ -1,15 +1,19 @@
 # GCP setup — developer environment
 
-The standard 15-minute path to a working dev setup. Every developer creates the same `switchboard-dev` project layout, so onboarding is "follow these steps top to bottom" instead of "make some judgment calls about what to enable."
+A single shared `switchboard-dev` project owns all dev-time GCP resources. New developers don't bootstrap a project — they're added as members and create their own OAuth client + API key inside it. This means: one Vertex allowlist request, one OAuth consent screen, one Cloud Logging dashboard, one billing line. Less per-dev friction, faster onboarding.
 
-Most of [`gcp-setup.md`](./gcp-setup.md) — Terraform, Cloud SQL, KMS, VPC, Cloud Run — is **prod-only** and intentionally skipped here. Dev runs uvicorn + pnpm on your laptop, talks to a SQLite file, simulates SMS, and uses Gemini via either an API key or Vertex AI in your own personal dev project.
+Most of [`gcp-setup.md`](./gcp-setup.md) — Terraform, Cloud SQL, KMS, VPC, Cloud Run — is **prod-only** and intentionally skipped here. Dev runs uvicorn + pnpm on your laptop, talks to a SQLite file, simulates SMS, and uses Gemini via either an API key or Vertex AI in the shared dev project.
 
-You'll create:
+### Two paths through this doc
 
-- One GCP project: **`switchboard-dev-<your-handle>`** (project ids are globally unique, so we suffix yours).
-- One OAuth client for NextAuth login (required).
-- One Gemini API key (required).
-- Optional: a second OAuth client for Calendar integration; Vertex AI access; a GCS bucket for recording-storage testing.
+- **You're the project bootstrapper** (lead engineer / founder, doing this first time): start at §0 and run the whole thing. You'll set up the project, consent screen, optional Vertex allowlist, and IAM. About 20 minutes.
+- **You're a developer joining an existing team**: ask the project owner to add you as a test user on the consent screen and grant `roles/aiplatform.user` (only if you'll use Vertex). Then **skip to §3** — create your personal OAuth client + Gemini key. About 5 minutes.
+
+Per-developer resources you'll create inside the shared project:
+
+- One OAuth client for NextAuth login: `switchboard-dev-login-<your-handle>` (required).
+- One Gemini API key: also tied to your handle (required).
+- Optional: a second OAuth client `switchboard-dev-calendar-<your-handle>` for Calendar integration testing; a personal GCS bucket if testing the `gcs` storage path.
 
 ---
 
@@ -17,9 +21,9 @@ You'll create:
 
 | Capability | Needed in dev? | How |
 |---|---|---|
-| GCP project (`switchboard-dev-<handle>`) | ✅ yes | Created in §1 below. |
-| Gemini Live | ✅ yes | API key (§3). Vertex is optional and covered in §6. |
-| Google OAuth (NextAuth login) | ✅ yes | OAuth client created in §2. |
+| Shared GCP project (`switchboard-dev`) | ✅ yes | Bootstrapped once in §1; new devs added via IAM in §2. |
+| Google OAuth (NextAuth login) | ✅ yes | Per-dev OAuth client created in §3. |
+| Gemini Live | ✅ yes | Per-dev API key (§4). Vertex is optional and covered in §6. |
 | Backend Postgres | ❌ no | SQLite at `backend/switchboard.db` is the dev default. |
 | KMS | ❌ no | Recordings go to filesystem (`SWITCHBOARD_STORAGE_MODE=local`). |
 | VPC / Workload Identity | ❌ no | Single-process local dev, no service-to-service hops. |
@@ -44,94 +48,136 @@ You **don't** need a GCP organization for dev. A standalone project under your p
 
 ---
 
-## 1. Create the `switchboard-dev` project
+## 1. Bootstrap the shared `switchboard-dev` project (once, by the project owner)
 
-Project ids are globally unique across GCP, so suffix yours with your handle (`switchboard-dev-tj`, `switchboard-dev-albin`, …). Pick something stable — you'll reference this id in `.env.local` from §6 onwards.
+> Already exists? **Skip this section** — go to §2 to be added as a member, then §3 to create your own OAuth client.
+
+The project id needs to be globally unique. The team standard is `switchboard-dev`; if that's taken on your org, fall back to `switchboard-dev-<orgslug>` (e.g. `switchboard-dev-siftlab`).
 
 ```bash
-HANDLE="$(whoami)"                          # or pick something cleaner
-DEV_PROJECT="switchboard-dev-$HANDLE"
-gcloud projects create "$DEV_PROJECT" --name "Switchboard dev ($HANDLE)"
+DEV_PROJECT="switchboard-dev"
+gcloud projects create "$DEV_PROJECT" --name "Switchboard dev"
 gcloud config set project "$DEV_PROJECT"
 ```
 
-If you're part of a GCP organization, link a billing account so you can enable Vertex / Calendar APIs (they require billing even on free tier):
+Link a billing account so Vertex / Calendar APIs can be enabled (they require billing even on free tier):
 
 ```bash
 BILLING="0X0X0X-XXXXXX-XXXXXX"           # gcloud beta billing accounts list
 gcloud beta billing projects link "$DEV_PROJECT" --billing-account "$BILLING"
 ```
 
-No billing account? The project still works for OAuth + Gemini API key, you just can't enable Vertex / Calendar (§6 / §7).
-
-Enable the APIs you'll need across this guide in one shot:
+Enable the always-needed APIs in one shot:
 
 ```bash
 gcloud services enable \
   iamcredentials.googleapis.com \
   generativelanguage.googleapis.com \
   --project "$DEV_PROJECT"
-# Add aiplatform / calendar-json / storage when you reach §6 / §7 / §8.
+# Add aiplatform / calendar-json / storage at §6 / §7 / §8 only if needed.
 ```
 
----
+**Configure the OAuth consent screen** (one-off; new devs are added as test users in §2 instead of reconfiguring this):
 
-## 2. Create the OAuth client for NextAuth login
+[Console → APIs & Services → OAuth consent screen](https://console.cloud.google.com/apis/credentials/consent).
 
-Login won't work without this — the only mandatory GCP UI step.
+- User type: **External**
+- App name: `Switchboard (dev)`
+- User support email + developer contact: a shared dev alias (e.g. `dev@switchboard.se`) so it doesn't churn when individual devs leave.
+- Scopes: leave default. (§7 adds the Calendar scope when needed.)
+- Test users: the bootstrapper's email — more added in §2.
 
-1. **Configure the OAuth consent screen:**
+**Set the cost guardrail** so a runaway Vertex test can't burn through a credit card:
 
-   [Console → APIs & Services → OAuth consent screen](https://console.cloud.google.com/apis/credentials/consent).
+```bash
+gcloud billing budgets create \
+  --billing-account "$BILLING" \
+  --display-name "switchboard-dev guardrail" \
+  --budget-amount=100 \
+  --threshold-rule=percent=0.5 \
+  --threshold-rule=percent=0.9 \
+  --threshold-rule=percent=1.0
+```
 
-   - User type: **External**
-   - App name: `Switchboard (dev — <your-handle>)` so it's obvious in the consent prompt.
-   - User support email: your email.
-   - Developer contact: your email.
-   - Scopes: leave default.
-   - Test users: add your own Google account email — required while the app is in "Testing" mode.
-
-2. **Create the OAuth client:**
-
-   [Console → APIs & Services → Credentials](https://console.cloud.google.com/apis/credentials) → **Create Credentials** → **OAuth client ID**.
-
-   - Application type: **Web application**
-   - Name: `switchboard-dev-login`
-   - Authorized redirect URIs:
-     - `http://localhost:3000/api/auth/callback/google`
-
-3. **Copy the credentials into `web/.env.local`:**
-
-   ```bash
-   GOOGLE_CLIENT_ID=<your-client-id>.apps.googleusercontent.com
-   GOOGLE_CLIENT_SECRET=GOCSPX-...
-   NEXTAUTH_URL=http://localhost:3000
-   NEXTAUTH_SECRET=$(openssl rand -base64 32)
-   ```
-
-4. **Restart `next dev`** — env vars only load at boot.
+100 SEK/mo is a generous dev budget; alerts fire at 50 / 90 / 100 %.
 
 ---
 
-## 3. Get a Gemini API key (scoped to your dev project)
+## 2. Add a developer to the shared project (once per new hire)
+
+Run by the project owner whenever a new developer joins.
+
+```bash
+DEV_EMAIL="alice@switchboard.se"
+DEV_PROJECT="switchboard-dev"
+
+# Minimum: lets them use Gemini, create OAuth clients, see logs.
+gcloud projects add-iam-policy-binding "$DEV_PROJECT" \
+  --member="user:$DEV_EMAIL" --role="roles/serviceusage.serviceUsageConsumer"
+gcloud projects add-iam-policy-binding "$DEV_PROJECT" \
+  --member="user:$DEV_EMAIL" --role="roles/iam.serviceAccountUser"
+gcloud projects add-iam-policy-binding "$DEV_PROJECT" \
+  --member="user:$DEV_EMAIL" --role="roles/oauthconfig.editor"
+gcloud projects add-iam-policy-binding "$DEV_PROJECT" \
+  --member="user:$DEV_EMAIL" --role="roles/logging.viewer"
+
+# If they'll use Vertex (§6):
+gcloud projects add-iam-policy-binding "$DEV_PROJECT" \
+  --member="user:$DEV_EMAIL" --role="roles/aiplatform.user"
+```
+
+Add them as a **test user** on the OAuth consent screen so the login flow accepts their Google account: [Console → OAuth consent screen → Test users → Add users](https://console.cloud.google.com/apis/credentials/consent).
+
+Once that's done, the new dev runs `gcloud config set project switchboard-dev` and continues at §3.
+
+---
+
+## 3. Create your personal OAuth client for NextAuth login
+
+Each developer creates their own OAuth client inside the shared project. Different `client_secret` per developer scopes blast radius — one leaked dev secret doesn't compromise everyone.
+
+[Console → APIs & Services → Credentials](https://console.cloud.google.com/apis/credentials) → **Create Credentials** → **OAuth client ID**.
+
+- Application type: **Web application**
+- Name: `switchboard-dev-login-<your-handle>` (e.g. `switchboard-dev-login-tj`)
+- Authorized redirect URIs:
+  - `http://localhost:3000/api/auth/callback/google`
+
+Copy the credentials into `web/.env.local`:
+
+```bash
+GOOGLE_CLIENT_ID=<your-client-id>.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=GOCSPX-...
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=$(openssl rand -base64 32)
+```
+
+Restart `next dev` — env vars only load at boot.
+
+---
+
+## 4. Get your personal Gemini API key
 
 1. Go to [aistudio.google.com/apikey](https://aistudio.google.com/apikey).
-2. Click **Create API key** → select your `switchboard-dev-<handle>` project. (If it doesn't appear, refresh — newly-created projects take ~30 s to propagate.)
-3. Copy the `AIza…` value into repo-root `.env.local`:
+2. Click **Create API key** → select the **`switchboard-dev`** project.
+3. Name it `switchboard-dev-<your-handle>` so it's obvious whose key it is.
+4. Copy the `AIza…` value into repo-root `.env.local`:
 
 ```bash
 echo 'GEMINI_API_KEY=AIza...' > .env.local
 ```
 
+Per-dev keys (rather than a shared key) make rotation safer — a leaked key only blocks one dev when revoked.
+
 This routes through `generativelanguage.googleapis.com` (US-hosted, no DPA) — fine for dev, never for prod. Free tier is generous enough for repeated voice tests during local development.
 
-The backend defaults to `SWITCHBOARD_GEMINI_PROVIDER=api_key`, so no other env var is needed unless you opt into Vertex in §5.
+The backend defaults to `SWITCHBOARD_GEMINI_PROVIDER=api_key`, so no other env var is needed unless you opt into Vertex in §6.
 
 ---
 
-## 4. (Optional) Set up Application Default Credentials
+## 5. (Optional) Set up Application Default Credentials
 
-Only needed if you'll touch Vertex (§5), Calendar (§6), or GCS (§7) from the local backend.
+Only needed if you'll touch Vertex (§6), Calendar (§7), or GCS (§8) from the local backend.
 
 ```bash
 gcloud auth application-default login
@@ -145,7 +191,7 @@ gcloud auth application-default set-quota-project "$DEV_PROJECT"
 
 ---
 
-## 5. (Optional) Enable Vertex AI to test the prod Gemini path
+## 6. (Optional) Enable Vertex AI to test the prod Gemini path
 
 The prod build uses `SWITCHBOARD_GEMINI_PROVIDER=vertex` for EU residency + DPA + audit logs. To exercise the same code path locally:
 
@@ -159,11 +205,11 @@ gcloud projects add-iam-policy-binding "$DEV_PROJECT" \
   --role="roles/aiplatform.user"
 ```
 
-Then in repo-root `.env.local` (substitute your `$DEV_PROJECT` from §1):
+Then in repo-root `.env.local`:
 
 ```bash
 SWITCHBOARD_GEMINI_PROVIDER=vertex
-SWITCHBOARD_VERTEX_PROJECT=switchboard-dev-<handle>
+SWITCHBOARD_VERTEX_PROJECT=switchboard-dev
 SWITCHBOARD_VERTEX_LOCATION=europe-west4
 # unset GEMINI_API_KEY — Vertex uses ADC, not a key
 ```
@@ -172,17 +218,17 @@ Vertex Live preview models may require allowlist access; if you get a `404` or `
 
 ---
 
-## 6. (Optional) Calendar integration OAuth client
+## 7. (Optional) Calendar integration OAuth client
 
-**Distinct from the login OAuth client.** The Calendar integration uses different consent scopes, so it needs a separate client to avoid scope creep on the login flow.
+**Distinct from the login OAuth client.** Calendar uses different consent scopes, so it needs a separate client per developer to avoid scope creep on the login flow.
 
-1. **Enable the API:**
+1. **Enable the API** (project owner; one-off):
    ```bash
    gcloud services enable calendar-json.googleapis.com --project "$DEV_PROJECT"
    ```
 
-2. **Create the client** (same Console UI as §2):
-   - Name: `switchboard-dev-calendar`
+2. **Create your personal client** (same Console UI as §3):
+   - Name: `switchboard-dev-calendar-<your-handle>`
    - Authorized redirect URIs:
      - `http://localhost:8000/api/integrations/google-calendar/callback`
 
@@ -199,29 +245,32 @@ Vertex Live preview models may require allowlist access; if you get a `404` or `
 
 ---
 
-## 7. (Optional) GCS for recording storage
+## 8. (Optional) GCS for recording storage
 
 Only do this if you specifically want to exercise the `gcs` storage path. The default `local` mode writes to `backend/recordings/` and is fine for everything else.
 
+Per-dev buckets — keep one dev's recordings out of another's namespace:
+
 ```bash
-gcloud services enable storage.googleapis.com --project "$DEV_PROJECT"
-gcloud storage buckets create "gs://${DEV_PROJECT}-rec" \
+HANDLE="$(whoami)"
+gcloud services enable storage.googleapis.com --project switchboard-dev
+gcloud storage buckets create "gs://switchboard-dev-rec-$HANDLE" \
   --location=europe-west4 \
   --uniform-bucket-level-access
 ```
 
 ```bash
-# repo-root .env.local (substitute your $DEV_PROJECT from §1)
+# repo-root .env.local
 SWITCHBOARD_STORAGE_MODE=gcs
-SWITCHBOARD_GCP_PROJECT=switchboard-dev-<handle>
-SWITCHBOARD_GCS_BUCKET_PREFIX=switchboard-dev-<handle>-rec
+SWITCHBOARD_GCP_PROJECT=switchboard-dev
+SWITCHBOARD_GCS_BUCKET_PREFIX=switchboard-dev-rec-<your-handle>
 ```
 
-ADC (§4) handles auth; no service-account JSON keys.
+ADC (§5) handles auth; no service-account JSON keys.
 
 ---
 
-## 8. (Optional) Wire up the secret-management story locally
+## 9. (Optional) Wire up the secret-management story locally
 
 If you want to test the prod-shape "secrets come from Secret Manager" loading without provisioning prod, you can use Secret Manager in the dev project:
 
@@ -237,7 +286,7 @@ For 99% of dev work, this is unnecessary. The full inventory + creation procedur
 
 ---
 
-## 9. Verify the setup
+## 10. Verify the setup
 
 ```bash
 # Backend boots
@@ -248,11 +297,11 @@ make backend
 make web
 # → http://localhost:3000 redirects to /marketing
 
-# Login works (after §2)
+# Login works (after §3)
 open http://localhost:3000/login
 # → "Logga in med Google" → consent screen → /inbox
 
-# Voice test works (after §3)
+# Voice test works (after §4)
 open http://localhost:3000/admin
 # → scroll to "Röstprov" → "Starta test-samtal"
 # → see the bridge open and Gemini Live respond
@@ -260,22 +309,49 @@ open http://localhost:3000/admin
 
 If any step fails, the troubleshooting tree:
 
-- **Login error `client_id is required`:** §2 not done, or `web/.env.local` missing / not picked up. Restart `next dev`.
-- **Voice test pre-flight fails:** `GEMINI_API_KEY` missing in repo-root `.env.local` (§3), or you set `SWITCHBOARD_GEMINI_PROVIDER=vertex` without doing §5.
-- **Vertex returns 404 / permission denied:** model not allowlisted yet — fall back to `api_key` and continue dev work.
-- **Calendar OAuth fails with `redirect_uri_mismatch`:** the URI in your client config (§6) must exactly match `SWITCHBOARD_GOOGLE_CALENDAR_REDIRECT_URI` in `.env.local` — `localhost` ≠ `127.0.0.1` to OAuth.
+- **Login error `client_id is required`:** §3 not done, or `web/.env.local` missing / not picked up. Restart `next dev`.
+- **Login error `Access blocked: This app's request is invalid`:** you weren't added as a test user on the OAuth consent screen — ask the project owner to run §2.
+- **Voice test pre-flight fails:** `GEMINI_API_KEY` missing in repo-root `.env.local` (§4), or you set `SWITCHBOARD_GEMINI_PROVIDER=vertex` without doing §6.
+- **Vertex returns 404 / permission denied:** model not allowlisted yet — fall back to `api_key` and continue dev work; the project owner can request allowlist access once for the whole team.
+- **Calendar OAuth fails with `redirect_uri_mismatch`:** the URI in your client config (§7) must exactly match `SWITCHBOARD_GOOGLE_CALENDAR_REDIRECT_URI` in `.env.local` — `localhost` ≠ `127.0.0.1` to OAuth.
 
 ---
 
-## 10. Cleaning up
+## 11. Cleaning up
 
-If you're done with the dev project:
+The shared project stays — what gets cleaned up depends on whether you're a leaving developer or the project bootstrapper.
+
+**Leaving developer:** delete only your own per-dev resources, not the project itself.
 
 ```bash
-gcloud projects delete "$DEV_PROJECT"
+# Delete your personal OAuth clients (Console → APIs & Services → Credentials)
+# - switchboard-dev-login-<your-handle>
+# - switchboard-dev-calendar-<your-handle>  (if you created one)
+
+# Revoke your personal Gemini API key (https://aistudio.google.com/apikey)
+# - switchboard-dev-<your-handle>
+
+# Delete your personal GCS bucket (if you created one in §8)
+gcloud storage rm -r "gs://switchboard-dev-rec-$HANDLE"
 ```
 
-OAuth clients are deleted with the project. Secret Manager secrets, GCS buckets, billing exports — all gone. (You have 30 days to undo the deletion if you regret it.)
+The project owner then removes you from IAM:
+
+```bash
+gcloud projects remove-iam-policy-binding switchboard-dev \
+  --member="user:$DEV_EMAIL" --role="roles/aiplatform.user"
+# repeat for every role granted in §2
+```
+
+Also remove them from the OAuth consent screen test-user list.
+
+**Project owner sunsetting the whole dev environment:** rare, but the command is:
+
+```bash
+gcloud projects delete switchboard-dev
+```
+
+(30-day undo window.)
 
 ---
 
