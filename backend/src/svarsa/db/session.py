@@ -63,15 +63,89 @@ def reset_engine() -> None:
 
 
 def init_db() -> None:
-    """Dev-only schema bootstrap. Production uses Alembic migrations."""
+    """Dev-only schema bootstrap.
+
+    On Postgres we rely on ``alembic upgrade head`` (run by the container
+    entrypoint or CI). On SQLite we:
+
+    1. Detect whether the existing schema is missing any columns the
+       current models declare.
+    2. If yes, attempt ``alembic upgrade head``. If alembic fails (or the
+       drift is too wide for an in-place upgrade), drop the file and
+       recreate from `SQLModel.metadata` so dev never gets stuck on
+       stale schema.
+    """
     from svarsa import models  # noqa: F401
 
     settings = get_settings()
     if settings.is_postgres:
-        # In production we run migrations via `alembic upgrade head` in CI,
-        # not from the running app. Skip create_all to avoid drift.
         return
-    SQLModel.metadata.create_all(get_engine())
+
+    engine = get_engine()
+    if not _sqlite_schema_matches(engine):
+        # Dev-only: nuke and recreate. Seeded data is regenerated; nothing
+        # survives across model edits in dev anyway. Production uses
+        # Postgres + explicit alembic upgrades.
+        from svarsa.core.logging import get_logger
+
+        get_logger("svarsa.db").warning("schema_drift_detected_recreating_sqlite")
+        _recreate_sqlite(engine, settings)
+        engine = get_engine()
+    SQLModel.metadata.create_all(engine)
+
+
+def _sqlite_schema_matches(engine: Engine) -> bool:
+    """True iff every model column exists on its corresponding table."""
+    from sqlalchemy import inspect
+
+    insp = inspect(engine)
+    if not insp.has_table("firma"):
+        return True  # fresh DB; create_all will populate
+    for table_name, table in SQLModel.metadata.tables.items():
+        if not insp.has_table(table_name):
+            return False
+        actual = {c["name"] for c in insp.get_columns(table_name)}
+        for column in table.columns:
+            if column.name not in actual:
+                return False
+    return True
+
+
+def _try_alembic_upgrade(engine: Engine, settings: Settings) -> bool:
+    try:
+        from pathlib import Path
+
+        from alembic import command
+        from alembic.config import Config
+
+        repo_root = Path(__file__).resolve().parents[4]
+        alembic_ini = repo_root / "backend" / "alembic.ini"
+        if not alembic_ini.exists():
+            return False
+        cfg = Config(str(alembic_ini))
+        cfg.set_main_option("script_location", str(repo_root / "backend" / "alembic"))
+        cfg.set_main_option("sqlalchemy.url", settings.database_url)
+        command.upgrade(cfg, "head")
+        return True
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def _recreate_sqlite(engine: Engine, settings: Settings) -> None:
+    """Last-resort dev-only reset: delete the file, drop the engine cache."""
+    import os
+
+    # SQLAlchemy SQLite URLs use `sqlite:///<absolute_or_relative_path>`.
+    # `sqlite:////abs/path` → 4 slashes for absolute. Standard form is
+    # `sqlite:///abs/path` where the third slash is the separator and the
+    # rest is the literal filesystem path.
+    db_path = settings.database_url.removeprefix("sqlite:///")
+    engine.dispose()
+    if db_path and os.path.exists(db_path):
+        os.remove(db_path)
+        if os.path.exists(db_path + "-journal"):
+            os.remove(db_path + "-journal")
+    reset_engine()
 
 
 def get_session() -> Generator[Session, None, None]:
