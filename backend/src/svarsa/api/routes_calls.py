@@ -44,6 +44,7 @@ def _to_read(call: Call, customer_name: str | None) -> CallRead:
         severity=call.severity,
         status=call.status,
         summary_short=summary_short,
+        cost_total_sek=call.cost_total_sek or 0.0,
     )
 
 

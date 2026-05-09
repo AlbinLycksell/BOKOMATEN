@@ -88,6 +88,15 @@ class Settings(BaseSettings):
     sentry_dsn: str = ""
     sentry_environment: str | None = None
 
+    # ---- cost telemetry rates (tune as GA pricing lands) ----
+    # Vertex AI Live API token rates — estimates based on PRD §10.1.
+    cost_rate_prompt_token_sek: float = 0.0000125
+    cost_rate_response_token_sek: float = 0.000050
+    # 46elks Sweden — inbound voice + SMS.
+    cost_rate_telephony_minute_sek: float = 0.40
+    cost_rate_sms_sek: float = 0.30
+    cost_overhead_sek: float = 0.30
+
     @property
     def is_postgres(self) -> bool:
         return self.database_url.startswith("postgresql")

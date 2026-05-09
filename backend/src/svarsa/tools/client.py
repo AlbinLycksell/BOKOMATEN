@@ -38,6 +38,7 @@ class LocalToolClient:
 
     def __init__(self, session: Session) -> None:
         self.session = session
+        self.consent_disabled = False
 
     async def dispatch(
         self,
@@ -46,8 +47,15 @@ class LocalToolClient:
         name: str,
         args: dict[str, Any],
     ) -> dict[str, Any]:
-        ctx = ToolContext(session=self.session, firma_id=firma_id, call_id=call_id)
-        return local_dispatch(ctx, name, args)
+        ctx = ToolContext(
+            session=self.session,
+            firma_id=firma_id,
+            call_id=call_id,
+        )
+        result = local_dispatch(ctx, name, args)
+        if ctx.consent_disabled:
+            self.consent_disabled = True
+        return result
 
 
 class HTTPToolClient:

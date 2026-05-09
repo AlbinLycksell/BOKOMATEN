@@ -38,6 +38,10 @@ class Call(SQLModel, table=True):
     summary: dict[str, Any] | None = SQLField(default=None, sa_column=Column(JSON))
     gemini_session_id: str | None = None
     billing_seconds: int = 0
+    cost_breakdown: dict[str, Any] | None = SQLField(
+        default=None, sa_column=Column(JSON)
+    )
+    cost_total_sek: float = 0.0
 
 
 class TranscriptSegment(SQLModel, table=True):
@@ -76,6 +80,7 @@ class CallRead(BaseModel):
     severity: Severity | None
     status: CallStatus
     summary_short: str | None
+    cost_total_sek: float = 0.0
 
 
 class TranscriptSegmentRead(BaseModel):

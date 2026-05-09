@@ -34,6 +34,8 @@ from svarsa.tools.schemas import (
     CheckRotEligibilityResult,
     CreateLeadArgs,
     CreateLeadResult,
+    DisableRecordingArgs,
+    DisableRecordingResult,
     EscalateToOwnerArgs,
     EscalateToOwnerResult,
     LookupCustomerArgs,
@@ -60,6 +62,7 @@ class ToolContext:
     session: Session
     firma_id: str
     call_id: str | None = None
+    consent_disabled: bool = False
 
 
 Handler = Callable[[ToolContext, dict[str, Any]], dict[str, Any]]
@@ -206,6 +209,24 @@ def _h_take_message(ctx: ToolContext, raw: dict[str, Any]) -> dict[str, Any]:
     return TakeMessageResult(message_id=new_id(), forwarded_to_user_id=None).model_dump()
 
 
+def _h_disable_recording(ctx: ToolContext, raw: dict[str, Any]) -> dict[str, Any]:
+    args = DisableRecordingArgs.model_validate(raw)
+    ctx.consent_disabled = True
+    log.warning("consent.recording_disabled", call_id=ctx.call_id, reason=args.reason_sv)
+    if ctx.call_id is not None:
+        from svarsa.services import audit_service
+
+        audit_service.record(
+            ctx.session,
+            actor="ai",
+            action="recording.disabled",
+            target_type="call",
+            target_id=ctx.call_id,
+            payload={"reason_sv": args.reason_sv},
+        )
+    return DisableRecordingResult(disabled=True).model_dump()
+
+
 HANDLERS: dict[str, Handler] = {
     "lookup_customer": _h_lookup_customer,
     "triage_emergency": _h_triage_emergency,
@@ -219,6 +240,7 @@ HANDLERS: dict[str, Handler] = {
     "check_rot_eligibility": _h_check_rot,
     "transfer_to_human": _h_transfer_to_human,
     "take_message": _h_take_message,
+    "disable_recording_for_call": _h_disable_recording,
 }
 
 

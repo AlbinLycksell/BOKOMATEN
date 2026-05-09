@@ -195,6 +195,14 @@ class TakeMessageResult(BaseModel):
     forwarded_to_user_id: str | None = None
 
 
+class DisableRecordingArgs(BaseModel):
+    reason_sv: str = "Kunden invände mot inspelning."
+
+
+class DisableRecordingResult(BaseModel):
+    disabled: bool
+
+
 TOOL_NAMES: tuple[str, ...] = (
     "lookup_customer",
     "triage_emergency",
@@ -208,4 +216,5 @@ TOOL_NAMES: tuple[str, ...] = (
     "check_rot_eligibility",
     "transfer_to_human",
     "take_message",
+    "disable_recording_for_call",
 )

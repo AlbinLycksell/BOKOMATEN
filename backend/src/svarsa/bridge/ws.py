@@ -39,7 +39,7 @@ from svarsa.core.tenant import firma_context
 from svarsa.core.time import utcnow
 from svarsa.db.session import get_engine
 from svarsa.models import Call, CallStatus, Firma, TranscriptRole, TranscriptSegment
-from svarsa.services import recording_service, redaction_service
+from svarsa.services import cost_service, recording_service, redaction_service
 from svarsa.tools.client import ToolClient, make_tool_client
 
 log = get_logger("svarsa.bridge")
@@ -96,11 +96,43 @@ async def bridge(websocket: WebSocket, firma_id: str, call_id: str) -> None:
             call.status = CallStatus.COMPLETED
             call.billing_seconds = int((call.ended_at - call.started_at).total_seconds())
 
+            consent_disabled = getattr(tool_client, "consent_disabled", False)
+            if consent_disabled:
+                log.info("recording.skipped.consent_disabled", call_id=call.id)
+            else:
+                try:
+                    _key, url = recording_service.finalize_and_persist(recording)
+                    call.recording_url = url
+                except Exception:  # noqa: BLE001
+                    log.exception("recording.persist_failed", call_id=call.id)
+
             try:
-                _key, url = recording_service.finalize_and_persist(recording)
-                call.recording_url = url
+                from sqlmodel import select
+
+                from svarsa.models import ToolInvocation
+
+                sms_count = len(
+                    db.exec(
+                        select(ToolInvocation)
+                        .where(ToolInvocation.call_id == call.id)
+                        .where(ToolInvocation.name == "send_sms_followup")
+                    ).all()
+                )
+                breakdown = cost_service.compute(
+                    usage=tracker.snapshot(),
+                    duration_seconds=call.billing_seconds,
+                    sms_count=sms_count,
+                )
+                call.cost_breakdown = breakdown.to_dict()
+                call.cost_total_sek = breakdown.total_sek
+                log.info(
+                    "cost.computed",
+                    call_id=call.id,
+                    total_sek=breakdown.total_sek,
+                    minutes=round(call.billing_seconds / 60, 2),
+                )
             except Exception:  # noqa: BLE001
-                log.exception("recording.persist_failed", call_id=call.id)
+                log.exception("cost.compute_failed", call_id=call.id)
 
             db.add(call)
             db.commit()
