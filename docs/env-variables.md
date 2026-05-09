@@ -11,6 +11,8 @@ Three things to internalise before reading further:
    - 🟡 **Internal** — server-only; not a credential but reveals topology. Don't log.
    - 🔒 **Secret** — credential or signing key. Rotate on leak. Use Secret Manager in prod.
 
+For where 🔒 secrets physically live (Secret Manager, Vercel, GitHub), how to create / rotate / audit them, and the full secret inventory by category, see [`secrets-management.md`](./secrets-management.md).
+
 ### How to read the Dev / Prod columns
 
 - `—` means leave unset; the default in `core/config.py` (or NextAuth's default) is right.
