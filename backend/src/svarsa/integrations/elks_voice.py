@@ -60,9 +60,22 @@ async def voice_inbound(
         if row is not None:
             firma_id = row.firma_id
 
+    # Plan-aware busy-tone gate — refuse the call if the firma is over-quota
+    # or has a delinquent subscription.
+    from svarsa.integrations.stripe_billing import check_call_allowed
+    from svarsa.models import Firma
+
+    with Session(get_engine()) as db:
+        firma = db.get(Firma, firma_id)
+        if firma is not None:
+            allowed, reason = check_call_allowed(firma)
+            if not allowed:
+                log.warning("elks.voice.rejected", firma=firma_id, reason=reason)
+                # 46elks recognizes "hangup" to drop the call immediately.
+                return {"hangup": "true"}
+
     bridge_call_id = callid or new_id()
     base = _bridge_ws_base(settings.application_backend_url)
-    # Bridge service usually has its own host in prod; fall back to backend host.
     ws_url = f"{base}/ws/bridge/{firma_id}/{bridge_call_id}"
 
     return {"connect": ws_url}

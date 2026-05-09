@@ -81,6 +81,14 @@ class Settings(BaseSettings):
     fortnox_client_secret: str = ""
     fortnox_redirect_uri: str = "https://app.svarsa.se/api/integrations/fortnox/callback"
 
+    # ---- stripe billing ----
+    stripe_api_key: str = ""
+    stripe_webhook_secret: str = ""
+    stripe_price_starter: str = ""
+    stripe_price_professional: str = ""
+    stripe_price_premium: str = ""
+    stripe_portal_return_url: str = "https://app.svarsa.se/settings"
+
     # ---- auth (NextAuth-issued JWT) ----
     auth_mode: Literal["dev_header", "jwks"] = "dev_header"
     auth_jwks_url: str = ""
