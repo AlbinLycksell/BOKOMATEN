@@ -43,6 +43,7 @@ dev = [
 
 [project.scripts]
 dump-openapi = "svarsa.scripts.dump_openapi:main"
+erase-tenant = "svarsa.scripts.erase_tenant:main"
 
 [build-system]
 requires = ["hatchling"]
