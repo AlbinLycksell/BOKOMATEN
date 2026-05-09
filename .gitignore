@@ -17,5 +17,9 @@ out/
 *.log
 backend/openapi.json
 web/lib/openapi.json
+backend/switchboard.db
+backend/switchboard.db-journal
 backend/svarsa.db
 backend/svarsa.db-journal
+backend/recordings/
+/uv.lock
