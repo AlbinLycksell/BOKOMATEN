@@ -81,6 +81,16 @@ class Settings(BaseSettings):
     fortnox_client_secret: str = ""
     fortnox_redirect_uri: str = "https://app.svarsa.se/api/integrations/fortnox/callback"
 
+    # ---- visma eEkonomi ----
+    visma_client_id: str = ""
+    visma_client_secret: str = ""
+    visma_redirect_uri: str = "https://app.svarsa.se/api/integrations/visma/callback"
+
+    # ---- google oauth (used by both NextAuth and Calendar) ----
+    google_oauth_client_id: str = ""
+    google_oauth_client_secret: str = ""
+    google_calendar_redirect_uri: str = "https://app.svarsa.se/api/integrations/google-calendar/callback"
+
     # ---- stripe billing ----
     stripe_api_key: str = ""
     stripe_webhook_secret: str = ""

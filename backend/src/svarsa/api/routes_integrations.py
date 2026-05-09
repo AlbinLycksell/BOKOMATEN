@@ -13,7 +13,7 @@ from sqlmodel import Session
 from svarsa.api.deps import get_current_firma, get_db
 from svarsa.core.config import get_settings
 from svarsa.core.logging import get_logger
-from svarsa.integrations import fortnox
+from svarsa.integrations import fortnox, google_calendar, visma_eekonomi
 from svarsa.models import Firma, Integration, IntegrationType
 
 router = APIRouter(prefix="/api/integrations", tags=["integrations"])
@@ -85,6 +85,92 @@ def fortnox_sync(
     with fortnox.FortnoxClient(db, firma.id) as client:
         pulled = fortnox.sync_customers_to_local(client)
     return {"customers_pulled": pulled}
+
+
+@router.get("/visma/connect")
+def visma_connect(
+    firma: Annotated[Firma, Depends(get_current_firma)],
+) -> RedirectResponse:
+    settings = get_settings()
+    if not settings.visma_client_id:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="visma_not_configured",
+        )
+    state = secrets.token_urlsafe(24)
+    _oauth_state[state] = firma.id
+    url = visma_eekonomi.authorize_url(
+        client_id=settings.visma_client_id,
+        redirect_uri=settings.visma_redirect_uri,
+        state=state,
+    )
+    return RedirectResponse(url=url, status_code=status.HTTP_302_FOUND)
+
+
+@router.get("/visma/callback")
+def visma_callback(
+    db: Annotated[Session, Depends(get_db)],
+    code: str = Query(...),
+    state: str = Query(...),
+) -> RedirectResponse:
+    firma_id = _oauth_state.pop(state, None)
+    if firma_id is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="invalid_state")
+    settings = get_settings()
+    tokens = visma_eekonomi.exchange_code(
+        code,
+        client_id=settings.visma_client_id,
+        client_secret=settings.visma_client_secret,
+        redirect_uri=settings.visma_redirect_uri,
+    )
+    visma_eekonomi.store_tokens(db, firma_id, tokens, settings=settings)
+    return RedirectResponse(
+        url="/settings?integration=visma&status=ok",
+        status_code=status.HTTP_302_FOUND,
+    )
+
+
+@router.get("/google-calendar/connect")
+def gcal_connect(
+    firma: Annotated[Firma, Depends(get_current_firma)],
+) -> RedirectResponse:
+    settings = get_settings()
+    if not settings.google_oauth_client_id:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="google_oauth_not_configured",
+        )
+    state = secrets.token_urlsafe(24)
+    _oauth_state[state] = firma.id
+    url = google_calendar.authorize_url(
+        client_id=settings.google_oauth_client_id,
+        redirect_uri=settings.google_calendar_redirect_uri,
+        state=state,
+    )
+    return RedirectResponse(url=url, status_code=status.HTTP_302_FOUND)
+
+
+@router.get("/google-calendar/callback")
+def gcal_callback(
+    db: Annotated[Session, Depends(get_db)],
+    code: str = Query(...),
+    state: str = Query(...),
+) -> RedirectResponse:
+    firma_id = _oauth_state.pop(state, None)
+    if firma_id is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="invalid_state")
+    settings = get_settings()
+    tokens = google_calendar.exchange_code(
+        code,
+        client_id=settings.google_oauth_client_id,
+        client_secret=settings.google_oauth_client_secret,
+        redirect_uri=settings.google_calendar_redirect_uri,
+    )
+    google_calendar.store_tokens(db, firma_id, tokens, settings=settings)
+    return RedirectResponse(
+        url="/settings?integration=google_calendar&status=ok",
+        status_code=status.HTTP_302_FOUND,
+    )
 
 
 @router.get("/status", response_model=list[IntegrationStatus])
