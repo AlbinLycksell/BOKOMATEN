@@ -16,7 +16,13 @@ from sqlmodel import Session
 
 from switchboard.core.ids import new_id
 from switchboard.core.logging import get_logger
-from switchboard.models import ToolInvocation
+from switchboard.models import (
+    AuditAction,
+    AuditActor,
+    AuditTargetType,
+    ToolInvocation,
+    ToolName,
+)
 from switchboard.services import (
     booking_service,
     customer_service,
@@ -83,7 +89,7 @@ def _h_lookup_customer(ctx: ToolContext, raw: dict[str, Any]) -> dict[str, Any]:
         found=True,
         customer_id=customer.id,
         name=customer.name,
-        type=customer.type.value,  # type: ignore[arg-type]
+        type=customer.type,
         last_job_summary=customer.notes_summary,
         notes=customer.notes_summary,
     ).model_dump()
@@ -154,7 +160,7 @@ def _h_escalate(ctx: ToolContext, raw: dict[str, Any]) -> dict[str, Any]:
         ctx.session,
         ctx.firma_id,
         ctx.call_id,
-        severity=args.severity,  # type: ignore[arg-type]
+        severity=args.severity,
         reason_sv=args.reason_sv,
     )
     return res.model_dump()
@@ -218,36 +224,38 @@ def _h_disable_recording(ctx: ToolContext, raw: dict[str, Any]) -> dict[str, Any
 
         audit_service.record(
             ctx.session,
-            actor="ai",
-            action="recording.disabled",
-            target_type="call",
+            actor=AuditActor.AI,
+            action=AuditAction.RECORDING_DISABLED,
+            target_type=AuditTargetType.CALL,
             target_id=ctx.call_id,
             payload={"reason_sv": args.reason_sv},
         )
     return DisableRecordingResult(disabled=True).model_dump()
 
 
-HANDLERS: dict[str, Handler] = {
-    "lookup_customer": _h_lookup_customer,
-    "triage_emergency": _h_triage_emergency,
-    "check_availability": _h_check_availability,
-    "book_appointment": _h_book_appointment,
-    "create_lead": _h_create_lead,
-    "escalate_to_owner": _h_escalate,
-    "send_sms_followup": _h_send_sms,
-    "request_photo_upload": _h_photo_upload,
-    "lookup_job_status": _h_lookup_job_status,
-    "check_rot_eligibility": _h_check_rot,
-    "transfer_to_human": _h_transfer_to_human,
-    "take_message": _h_take_message,
-    "disable_recording_for_call": _h_disable_recording,
+HANDLERS: dict[ToolName, Handler] = {
+    ToolName.LOOKUP_CUSTOMER: _h_lookup_customer,
+    ToolName.TRIAGE_EMERGENCY: _h_triage_emergency,
+    ToolName.CHECK_AVAILABILITY: _h_check_availability,
+    ToolName.BOOK_APPOINTMENT: _h_book_appointment,
+    ToolName.CREATE_LEAD: _h_create_lead,
+    ToolName.ESCALATE_TO_OWNER: _h_escalate,
+    ToolName.SEND_SMS_FOLLOWUP: _h_send_sms,
+    ToolName.REQUEST_PHOTO_UPLOAD: _h_photo_upload,
+    ToolName.LOOKUP_JOB_STATUS: _h_lookup_job_status,
+    ToolName.CHECK_ROT_ELIGIBILITY: _h_check_rot,
+    ToolName.TRANSFER_TO_HUMAN: _h_transfer_to_human,
+    ToolName.TAKE_MESSAGE: _h_take_message,
+    ToolName.DISABLE_RECORDING_FOR_CALL: _h_disable_recording,
 }
 
 
 def dispatch(ctx: ToolContext, name: str, args: dict[str, Any]) -> dict[str, Any]:
-    handler = HANDLERS.get(name)
-    if handler is None:
+    try:
+        tool = ToolName(name)
+    except ValueError:
         return {"error": f"unknown_tool:{name}"}
+    handler = HANDLERS[tool]
     started = time.perf_counter()
     error: str | None = None
     try:

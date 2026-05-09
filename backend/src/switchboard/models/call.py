@@ -10,7 +10,7 @@ from sqlmodel import SQLModel
 
 from switchboard.core.ids import new_id
 from switchboard.core.time import utcnow
-from switchboard.models.enums import CallStatus, Intent, Severity, TranscriptRole
+from switchboard.models.enums import CallSource, CallStatus, Intent, Severity, TranscriptRole
 
 
 class CallSummary(BaseModel):
@@ -33,6 +33,7 @@ class Call(SQLModel, table=True):
     intent: Intent | None = SQLField(default=None, index=True)
     severity: Severity | None = SQLField(default=None, index=True)
     status: CallStatus = SQLField(default=CallStatus.IN_PROGRESS, index=True)
+    source: CallSource = SQLField(default=CallSource.TELEPHONY, index=True)
     recording_url: str | None = None
     transcript_url: str | None = None
     summary: dict[str, Any] | None = SQLField(default=None, sa_column=Column(JSON))
@@ -79,6 +80,7 @@ class CallRead(BaseModel):
     intent: Intent | None
     severity: Severity | None
     status: CallStatus
+    source: CallSource
     summary_short: str | None
     cost_total_sek: float = 0.0
 

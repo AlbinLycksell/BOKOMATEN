@@ -12,6 +12,7 @@ from typing import Any
 from google.genai import types as gtypes
 from pydantic import BaseModel
 
+from switchboard.models import ToolName
 from switchboard.tools.schemas import (
     BookAppointmentArgs,
     CheckAvailabilityArgs,
@@ -28,57 +29,57 @@ from switchboard.tools.schemas import (
     TriageEmergencyArgs,
 )
 
-TOOL_DESCRIPTIONS: dict[str, tuple[type[BaseModel], str]] = {
-    "lookup_customer": (
+TOOL_DESCRIPTIONS: dict[ToolName, tuple[type[BaseModel], str]] = {
+    ToolName.LOOKUP_CUSTOMER: (
         LookupCustomerArgs,
         "Slå upp en kund i firmans system baserat på telefonnummer eller org-nummer. "
         "Anropa direkt vid samtalets start för CLI-baserad igenkänning.",
     ),
-    "triage_emergency": (
+    ToolName.TRIAGE_EMERGENCY: (
         TriageEmergencyArgs,
         "Bedöm om problemet är akut enligt firmans regler. Anropa när kunden beskriver ett problem.",
     ),
-    "check_availability": (
+    ToolName.CHECK_AVAILABILITY: (
         CheckAvailabilityArgs,
         "Hämta lediga tider i kalendern för planerat arbete.",
     ),
-    "book_appointment": (
+    ToolName.BOOK_APPOINTMENT: (
         BookAppointmentArgs,
         "Boka in jobbet hos kunden. Anropa endast efter att kunden uttryckligen bekräftat tid och adress.",
     ),
-    "create_lead": (
+    ToolName.CREATE_LEAD: (
         CreateLeadArgs,
         "Skapa ny kund/lead i firmans CRM när lookup_customer inte hittade träff.",
     ),
-    "escalate_to_owner": (
+    ToolName.ESCALATE_TO_OWNER: (
         EscalateToOwnerArgs,
         "Eskalera ärendet till ägare/jourtekniker enligt firmans eskaleringskedja.",
     ),
-    "send_sms_followup": (
+    ToolName.SEND_SMS_FOLLOWUP: (
         SendSmsFollowupArgs,
         "Skicka SMS-bekräftelse, foto-uppladdningslänk eller bokningsbekräftelse till kunden.",
     ),
-    "request_photo_upload": (
+    ToolName.REQUEST_PHOTO_UPLOAD: (
         RequestPhotoUploadArgs,
         "Generera engångs-länk för foto-uppladdning och skicka via SMS.",
     ),
-    "lookup_job_status": (
+    ToolName.LOOKUP_JOB_STATUS: (
         LookupJobStatusArgs,
         "Slå upp status på pågående eller nyligen avslutat jobb för befintlig kund.",
     ),
-    "check_rot_eligibility": (
+    ToolName.CHECK_ROT_ELIGIBILITY: (
         CheckRotEligibilityArgs,
         "Bedöm om kunden sannolikt kvalificerar för ROT-avdrag. Pure-function.",
     ),
-    "transfer_to_human": (
+    ToolName.TRANSFER_TO_HUMAN: (
         TransferToHumanArgs,
         "Koppla samtalet till en människa via SIP-bridge.",
     ),
-    "take_message": (
+    ToolName.TAKE_MESSAGE: (
         TakeMessageArgs,
         "Avsluta med strukturerat meddelande. Sista utvägen.",
     ),
-    "disable_recording_for_call": (
+    ToolName.DISABLE_RECORDING_FOR_CALL: (
         DisableRecordingArgs,
         "Stäng av inspelning av detta samtal direkt. Anropa endast om "
         "kunden uttryckligen invänder mot att samtalet spelas in.",

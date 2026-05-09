@@ -23,10 +23,17 @@ from switchboard.core.logging import get_logger
 from switchboard.core.tenant import firma_context
 from switchboard.core.time import utcnow
 from switchboard.models import (
+    AuditAction,
+    AuditActor,
     AuditLog,
     AuditLogRead,
+    AuditTargetType,
     Firma,
+    GeminiProvider,
     Severity,
+    SmsTemplate,
+    TestSmsVia,
+    ToolName,
 )
 from switchboard.services import (
     audit_service,
@@ -35,7 +42,8 @@ from switchboard.services import (
     scenario_service,
     sla_service,
 )
-from switchboard.tools.handlers import HANDLERS, ToolContext, dispatch as tool_dispatch
+from switchboard.tools.handlers import ToolContext
+from switchboard.tools.handlers import dispatch as tool_dispatch
 from switchboard.tools.schemas import TOOL_NAMES
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
@@ -76,23 +84,23 @@ class VoiceTestReadyResponse(BaseModel):
 @router.get("/voice-test/ready", response_model=VoiceTestReadyResponse)
 def voice_test_ready() -> VoiceTestReadyResponse:
     s = get_settings()
-    if s.gemini_provider == "vertex":
+    if s.gemini_provider is GeminiProvider.VERTEX:
         if not s.vertex_project:
             return VoiceTestReadyResponse(
                 ready=False,
-                provider="vertex",
+                provider=GeminiProvider.VERTEX.value,
                 model=s.gemini_model,
                 reason="SWITCHBOARD_VERTEX_PROJECT är inte satt på backenden.",
             )
         return VoiceTestReadyResponse(
             ready=True,
-            provider=f"vertex:{s.vertex_location}",
+            provider=f"{GeminiProvider.VERTEX.value}:{s.vertex_location}",
             model=s.gemini_model,
         )
     if not s.gemini_api_key:
         return VoiceTestReadyResponse(
             ready=False,
-            provider="api_key",
+            provider=GeminiProvider.API_KEY.value,
             model=s.gemini_model,
             reason=(
                 "GEMINI_API_KEY är inte satt. Lägg till den i .env.local "
@@ -102,7 +110,7 @@ def voice_test_ready() -> VoiceTestReadyResponse:
         )
     return VoiceTestReadyResponse(
         ready=True,
-        provider="api_key",
+        provider=GeminiProvider.API_KEY.value,
         model=s.gemini_model,
     )
 
@@ -191,7 +199,7 @@ def list_tools() -> list[ToolListEntry]:
     for name in TOOL_NAMES:
         args_model, _desc = TOOL_DESCRIPTIONS[name]
         schema = args_model.model_json_schema()
-        out.append(ToolListEntry(name=name, args_schema=schema))
+        out.append(ToolListEntry(name=name.value, args_schema=schema))
     return out
 
 
@@ -201,23 +209,25 @@ def run_tool(
     firma: Annotated[Firma, Depends(get_current_firma)],
     db: Annotated[Session, Depends(get_db)],
 ) -> ToolRunResponse:
-    if payload.name not in HANDLERS:
+    try:
+        tool = ToolName(payload.name)
+    except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"unknown_tool:{payload.name}",
-        )
+        ) from exc
     with firma_context(firma.id):
         ctx = ToolContext(session=db, firma_id=firma.id, call_id=None)
-        result = tool_dispatch(ctx, payload.name, payload.args)
+        result = tool_dispatch(ctx, tool.value, payload.args)
         audit_service.record(
             db,
-            actor="admin",
-            action="admin.tool.tested",
-            target_type="tool",
-            target_id=payload.name,
+            actor=AuditActor.ADMIN,
+            action=AuditAction.ADMIN_TOOL_TESTED,
+            target_type=AuditTargetType.TOOL,
+            target_id=tool.value,
             payload={"args": payload.args, "ok": "error" not in result},
         )
-    return ToolRunResponse(name=payload.name, result=result)
+    return ToolRunResponse(name=tool.value, result=result)
 
 
 # ---- test SMS / test escalation ----
@@ -225,14 +235,14 @@ def run_tool(
 
 class TestSmsRequest(BaseModel):
     to_phone: str = Field(pattern=r"^\+46\d{6,10}$")
-    template: str = "callback_promise"
+    template: SmsTemplate = SmsTemplate.CALLBACK_PROMISE
     context_data: dict[str, str | int | bool] = Field(default_factory=dict)
 
 
 class TestSmsResponse(BaseModel):
     sent: bool
     sms_id: str
-    via: str  # "live" or "simulated"
+    via: TestSmsVia
 
 
 @router.post("/test/sms", response_model=TestSmsResponse)
@@ -247,20 +257,20 @@ def test_sms(
     fs = FirmaSettings.model_validate(firma.settings or {})
     res = notification_service.send_sms(
         to_phone=payload.to_phone,
-        template=payload.template,  # type: ignore[arg-type]
+        template=payload.template,
         context_data=payload.context_data,
         firma_sender_id=fs.sms_sender_id,
         firma_sender_id_verified=fs.sms_sender_id_verified,
     )
-    via = "live" if settings.elks_api_username else "simulated"
+    via = TestSmsVia.LIVE if settings.elks_api_username else TestSmsVia.SIMULATED
     with firma_context(firma.id):
         audit_service.record(
             db,
-            actor="admin",
-            action="admin.sms.tested",
-            target_type="phone",
+            actor=AuditActor.ADMIN,
+            action=AuditAction.ADMIN_SMS_TESTED,
+            target_type=AuditTargetType.PHONE,
             target_id=payload.to_phone,
-            payload={"template": payload.template, "via": via},
+            payload={"template": payload.template.value, "via": via.value},
         )
     return TestSmsResponse(sent=res.sent, sms_id=res.sms_id, via=via)
 
@@ -294,7 +304,7 @@ def test_escalation(
             status=CallStatus.HANDLED,
             intent=None,
             severity=payload.severity,
-            gemini_session_id="admin:test_escalation",
+            gemini_session_id=f"{AuditActor.ADMIN.value}:test_escalation",
             ended_at=utcnow(),
             billing_seconds=1,
         )
@@ -309,9 +319,9 @@ def test_escalation(
         )
         audit_service.record(
             db,
-            actor="admin",
-            action="admin.escalation.tested",
-            target_type="call",
+            actor=AuditActor.ADMIN,
+            action=AuditAction.ADMIN_ESCALATION_TESTED,
+            target_type=AuditTargetType.CALL,
             target_id=synthetic_call.id,
             payload={"severity": payload.severity.value, "reason_sv": payload.reason_sv},
         )

@@ -2,10 +2,24 @@ from __future__ import annotations
 
 from functools import lru_cache
 from pathlib import Path
-from typing import Literal
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from switchboard.core.constants import (
+    DEFAULT_GEMINI_LANGUAGE,
+    DEFAULT_GEMINI_MODEL,
+    DEFAULT_GEMINI_VOICE,
+    DEFAULT_SMS_SENDER_ID,
+)
+from switchboard.models.enums import (
+    AuthMode,
+    Environment,
+    GeminiProvider,
+    LogLevel,
+    StorageMode,
+    ToolDispatchMode,
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 
@@ -20,7 +34,7 @@ class Settings(BaseSettings):
     )
 
     # ---- environment ----
-    env: Literal["dev", "staging", "prod"] = "dev"
+    env: Environment = Environment.DEV
     version: str = "0.1.0"
     region: str = "europe-west4"
 
@@ -36,22 +50,20 @@ class Settings(BaseSettings):
     db_pool_max_overflow: int = 10
 
     # ---- logging ----
-    log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
+    log_level: LogLevel = LogLevel.INFO
     log_json: bool = False
 
     # ---- realtime bridge ↔ application backend (PRD §8.2 / §8.10) ----
-    tool_dispatch_mode: Literal["local", "http"] = "local"
+    tool_dispatch_mode: ToolDispatchMode = ToolDispatchMode.LOCAL
     application_backend_url: str = "http://127.0.0.1:8000"
     bridge_internal_token: str = ""
 
     # ---- gemini live ----
-    # Two paths: (a) developer/eval — generativelanguage.googleapis.com via API key.
-    #            (b) production — Vertex AI in europe-west4 with Workload Identity.
-    gemini_provider: Literal["api_key", "vertex"] = "api_key"
+    gemini_provider: GeminiProvider = GeminiProvider.API_KEY
     gemini_api_key: str = Field(default="", validation_alias="GEMINI_API_KEY")
-    gemini_model: str = "models/gemini-3.1-flash-live-preview"
-    gemini_voice: str = "Aoede"
-    gemini_language: str = "sv-SE"
+    gemini_model: str = DEFAULT_GEMINI_MODEL
+    gemini_voice: str = DEFAULT_GEMINI_VOICE
+    gemini_language: str = DEFAULT_GEMINI_LANGUAGE
     vertex_project: str = ""
     vertex_location: str = "europe-west4"
 
@@ -62,10 +74,7 @@ class Settings(BaseSettings):
     kms_keyring: str = "switchboard"
     kms_location: str = "europe-west4"
 
-    # storage_mode controls where recordings land:
-    # - "local": dev — under backend/recordings/{firma_id}/...
-    # - "gcs":   prod — per-tenant buckets `${gcs_bucket_prefix}-{firma_id}-${region}`
-    storage_mode: Literal["local", "gcs"] = "local"
+    storage_mode: StorageMode = StorageMode.LOCAL
 
     # ---- redis (optional, deferred — Memorystore in prod) ----
     redis_url: str = ""
@@ -73,7 +82,7 @@ class Settings(BaseSettings):
     # ---- 46elks ----
     elks_api_username: str = ""
     elks_api_password: str = ""
-    elks_default_sender_id: str = "Switchboard"
+    elks_default_sender_id: str = DEFAULT_SMS_SENDER_ID
     elks_webhook_secret: str = ""
 
     # ---- fortnox ----
@@ -100,7 +109,7 @@ class Settings(BaseSettings):
     stripe_portal_return_url: str = "https://app.switchboard.se/settings"
 
     # ---- auth (NextAuth-issued JWT) ----
-    auth_mode: Literal["dev_header", "jwks"] = "dev_header"
+    auth_mode: AuthMode = AuthMode.DEV_HEADER
     auth_jwks_url: str = ""
     auth_audience: str = "switchboard-backend"
     auth_issuer: str = "https://app.switchboard.se"
@@ -126,11 +135,11 @@ class Settings(BaseSettings):
 
     @property
     def is_dev(self) -> bool:
-        return self.env == "dev"
+        return self.env is Environment.DEV
 
     @property
     def is_prod(self) -> bool:
-        return self.env == "prod"
+        return self.env is Environment.PROD
 
 
 @lru_cache(maxsize=1)

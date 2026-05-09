@@ -20,15 +20,19 @@ from google.genai import types as gtypes
 
 from switchboard.bridge.system_prompt import build_system_prompt
 from switchboard.core.config import Settings, get_settings
+from switchboard.core.constants import GEMINI_API_VERSION, GEMINI_MODEL_PREFIX
 from switchboard.core.logging import get_logger
-from switchboard.models import Firma
+from switchboard.models import Firma, GeminiProvider
 from switchboard.tools.declarations import TOOL_DECLARATIONS
 
 log = get_logger("switchboard.gemini")
 
+_SYSTEM_INSTRUCTION_ROLE = "system"
+_FIRMA_VOICE_KEY = "voice"
+
 
 def build_live_config(firma: Firma, settings: Settings) -> gtypes.LiveConnectConfig:
-    voice = (firma.settings or {}).get("voice", settings.gemini_voice)
+    voice = (firma.settings or {}).get(_FIRMA_VOICE_KEY, settings.gemini_voice)
     return gtypes.LiveConnectConfig(
         response_modalities=[gtypes.Modality.AUDIO],
         speech_config=gtypes.SpeechConfig(
@@ -39,7 +43,7 @@ def build_live_config(firma: Firma, settings: Settings) -> gtypes.LiveConnectCon
         ),
         system_instruction=gtypes.Content(
             parts=[gtypes.Part(text=build_system_prompt(firma))],
-            role="system",
+            role=_SYSTEM_INSTRUCTION_ROLE,
         ),
         tools=TOOL_DECLARATIONS,
         output_audio_transcription=gtypes.AudioTranscriptionConfig(),
@@ -54,7 +58,7 @@ def build_live_config(firma: Firma, settings: Settings) -> gtypes.LiveConnectCon
 
 def make_client(settings: Settings | None = None) -> genai.Client:
     s = settings or get_settings()
-    if s.gemini_provider == "vertex":
+    if s.gemini_provider is GeminiProvider.VERTEX:
         if not s.vertex_project:
             msg = "SWITCHBOARD_VERTEX_PROJECT must be set when SWITCHBOARD_GEMINI_PROVIDER=vertex"
             raise RuntimeError(msg)
@@ -70,16 +74,15 @@ def make_client(settings: Settings | None = None) -> genai.Client:
         )
     log.info("gemini.client.api_key")
     return genai.Client(
-        http_options={"api_version": "v1beta"},
+        http_options={"api_version": GEMINI_API_VERSION},
         api_key=s.gemini_api_key or None,
     )
 
 
 def model_name(settings: Settings | None = None) -> str:
     s = settings or get_settings()
-    # Vertex API uses bare model id without the `models/` prefix.
-    if s.gemini_provider == "vertex":
-        return s.gemini_model.removeprefix("models/")
+    if s.gemini_provider is GeminiProvider.VERTEX:
+        return s.gemini_model.removeprefix(GEMINI_MODEL_PREFIX)
     return s.gemini_model
 
 

@@ -21,9 +21,21 @@ from sqlmodel import Session
 from switchboard.core.config import Settings, get_settings
 from switchboard.core.logging import get_logger
 from switchboard.core.time import utcnow
-from switchboard.models import Firma, Plan
+from switchboard.models import Firma, Plan, StripeEventType, StripeSubscriptionStatus
 
 log = get_logger("switchboard.stripe")
+
+_DEFAULT_BILLING_COUNTRY = "SE"
+_STRIPE_MODE_SUBSCRIPTION = "subscription"
+_STRIPE_BILLING_REQUIRED = "required"
+
+_BLOCKED_SUBSCRIPTION_STATUSES: frozenset[StripeSubscriptionStatus] = frozenset(
+    {
+        StripeSubscriptionStatus.INCOMPLETE,
+        StripeSubscriptionStatus.INCOMPLETE_EXPIRED,
+        StripeSubscriptionStatus.CANCELED,
+    }
+)
 
 
 def _client(settings: Settings | None = None) -> "stripe":  # type: ignore[valid-type]
@@ -69,7 +81,7 @@ def ensure_customer(
         email=email,
         name=firma.name,
         metadata={"firma_id": firma.id},
-        address={"country": "SE"},
+        address={"country": _DEFAULT_BILLING_COUNTRY},
     )
     firma.stripe_customer_id = customer.id
     session.add(firma)
@@ -96,12 +108,12 @@ def create_checkout_session(
         raise RuntimeError(msg)
     cs = sc.checkout.Session.create(
         customer=customer_id,
-        mode="subscription",
+        mode=_STRIPE_MODE_SUBSCRIPTION,
         line_items=[{"price": price, "quantity": 1}],
         success_url=success_url,
         cancel_url=cancel_url,
         client_reference_id=firma.id,
-        billing_address_collection="required",
+        billing_address_collection=_STRIPE_BILLING_REQUIRED,
     )
     return {"id": cs.id, "url": cs.url}
 
@@ -152,9 +164,9 @@ def apply_subscription_event(
         return None
 
     etype = event["type"]
-    if etype.startswith("customer.subscription"):
+    if etype.startswith(StripeEventType.SUBSCRIPTION_PREFIX.value):
         firma.stripe_subscription_id = obj.get("id")
-        firma.subscription_status = obj.get("status", "incomplete")
+        firma.subscription_status = obj.get("status", StripeSubscriptionStatus.INCOMPLETE.value)
         items = (obj.get("items") or {}).get("data") or []
         if items:
             price_id = items[0].get("price", {}).get("id")
@@ -168,12 +180,12 @@ def apply_subscription_event(
 
             firma.plan_period_end = datetime.fromtimestamp(period_end, tz=timezone.utc)
             firma.plan_calls_used_period = 0
-    elif etype == "invoice.paid":
-        firma.subscription_status = "active"
-    elif etype == "invoice.payment_failed":
-        firma.subscription_status = "past_due"
-    elif etype == "checkout.session.completed":
-        firma.subscription_status = "active"
+    elif etype == StripeEventType.INVOICE_PAID.value:
+        firma.subscription_status = StripeSubscriptionStatus.ACTIVE.value
+    elif etype == StripeEventType.INVOICE_PAYMENT_FAILED.value:
+        firma.subscription_status = StripeSubscriptionStatus.PAST_DUE.value
+    elif etype == StripeEventType.CHECKOUT_COMPLETED.value:
+        firma.subscription_status = StripeSubscriptionStatus.ACTIVE.value
 
     firma.updated_at = utcnow()
     session.add(firma)
@@ -194,7 +206,7 @@ PLAN_LIMITS: dict[Plan, dict[str, int]] = {
 
 def check_call_allowed(firma: Firma) -> tuple[bool, str | None]:
     """Return (allowed, reason). Used by the bridge / webhook to gate ingress."""
-    if firma.subscription_status in ("incomplete", "incomplete_expired", "canceled"):
+    if firma.subscription_status in {s.value for s in _BLOCKED_SUBSCRIPTION_STATUSES}:
         return False, f"subscription_{firma.subscription_status}"
     limits = PLAN_LIMITS.get(firma.plan, PLAN_LIMITS[Plan.STARTER])
     if firma.plan_calls_used_period >= limits["calls_per_month"]:

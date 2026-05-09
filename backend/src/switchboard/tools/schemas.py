@@ -8,11 +8,25 @@ double as: (a) Gemini Live tool declarations (via `to_gemini_tool()` in
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Annotated, Literal
+from typing import Annotated
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
-from switchboard.models.enums import EmergencyIndicator, Severity, Trade
+from switchboard.models.enums import (
+    CustomerType,
+    EmergencyIndicator,
+    Severity,
+    SmsTemplate,
+    ToolName,
+    Trade,
+    TransferTarget,
+    TriageAction,
+    Urgency,
+)
+
+_ESCALATION_SEVERITIES: frozenset[Severity] = frozenset(
+    {Severity.CRITICAL, Severity.HIGH, Severity.MEDIUM}
+)
 
 
 SwedishE164 = Annotated[str, Field(pattern=r"^\+46\d{6,10}$", description="E.164 svenska +46…")]
@@ -29,7 +43,7 @@ class LookupCustomerResult(BaseModel):
     found: bool
     customer_id: str | None = None
     name: str | None = None
-    type: Literal["private", "company"] | None = None
+    type: CustomerType | None = None
     last_job_summary: str | None = None
     open_jobs: list[str] = []
     notes: str | None = None
@@ -44,7 +58,7 @@ class TriageEmergencyArgs(BaseModel):
 class TriageEmergencyResult(BaseModel):
     is_emergency: bool
     severity: Severity
-    recommended_action: Literal["escalate_now", "book_today", "book_normal", "informational"]
+    recommended_action: TriageAction
     reasoning_sv: str
 
 
@@ -88,7 +102,7 @@ class BookAppointmentResult(BaseModel):
 class CreateLeadArgs(BaseModel):
     name: str
     phone: SwedishE164
-    type: Literal["private", "company"] = "private"
+    type: CustomerType = CustomerType.PRIVATE
     email: str | None = None
     address: str | None = None
     org_number: OrgNumber | None = None
@@ -102,27 +116,26 @@ class CreateLeadResult(BaseModel):
 
 
 class EscalateToOwnerArgs(BaseModel):
-    severity: Literal["critical", "high", "medium"]
+    severity: Severity
     reason_sv: str
     customer_id: str | None = None
     customer_phone: SwedishE164
     address: str | None = None
     callback_window_sv: str = "15 min"
 
+    @field_validator("severity")
+    @classmethod
+    def _disallow_low(cls, v: Severity) -> Severity:
+        if v not in _ESCALATION_SEVERITIES:
+            msg = f"escalation_severity_must_be:{[s.value for s in _ESCALATION_SEVERITIES]}"
+            raise ValueError(msg)
+        return v
+
 
 class EscalateToOwnerResult(BaseModel):
     escalation_id: str
     contacted: list[str]
     next_in_chain_minutes: int
-
-
-SmsTemplate = Literal[
-    "booking_confirmation",
-    "emergency_ack",
-    "photo_upload_link",
-    "callback_promise",
-    "secure_form_link",
-]
 
 
 class SendSmsFollowupArgs(BaseModel):
@@ -173,7 +186,7 @@ class CheckRotEligibilityResult(BaseModel):
 
 
 class TransferToHumanArgs(BaseModel):
-    target: Literal["owner_mobile", "office", "on_call_technician", "external_answering_service"]
+    target: TransferTarget
     context_summary_sv: str
 
 
@@ -185,7 +198,7 @@ class TransferToHumanResult(BaseModel):
 class TakeMessageArgs(BaseModel):
     caller_phone: SwedishE164
     topic_sv: str
-    urgency: Literal["low", "medium", "high"]
+    urgency: Urgency
     caller_name: str | None = None
     callback_preference_sv: str | None = None
 
@@ -203,18 +216,4 @@ class DisableRecordingResult(BaseModel):
     disabled: bool
 
 
-TOOL_NAMES: tuple[str, ...] = (
-    "lookup_customer",
-    "triage_emergency",
-    "check_availability",
-    "book_appointment",
-    "create_lead",
-    "escalate_to_owner",
-    "send_sms_followup",
-    "request_photo_upload",
-    "lookup_job_status",
-    "check_rot_eligibility",
-    "transfer_to_human",
-    "take_message",
-    "disable_recording_for_call",
-)
+TOOL_NAMES: tuple[ToolName, ...] = tuple(ToolName)

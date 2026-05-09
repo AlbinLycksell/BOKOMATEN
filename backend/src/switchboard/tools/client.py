@@ -16,8 +16,11 @@ import httpx
 from sqlmodel import Session
 
 from switchboard.core.config import Settings, get_settings
+from switchboard.core.constants import ContentType, HttpHeader
 from switchboard.core.logging import get_logger
-from switchboard.tools.handlers import ToolContext, dispatch as local_dispatch
+from switchboard.models import ToolDispatchMode
+from switchboard.tools.handlers import ToolContext
+from switchboard.tools.handlers import dispatch as local_dispatch
 
 log = get_logger("switchboard.tools.client")
 
@@ -78,9 +81,9 @@ class HTTPToolClient:
     ) -> dict[str, Any]:
         url = f"{self.base_url}/api/tools/dispatch"
         headers = {
-            "X-Firma-Id": firma_id,
-            "X-Internal-Token": self.internal_token,
-            "Content-Type": "application/json",
+            HttpHeader.FIRMA_ID: firma_id,
+            HttpHeader.INTERNAL_TOKEN: self.internal_token,
+            HttpHeader.CONTENT_TYPE: ContentType.JSON,
         }
         body = {"call_id": call_id, "name": name, "args": args}
         try:
@@ -94,6 +97,6 @@ class HTTPToolClient:
 
 def make_tool_client(session: Session, settings: Settings | None = None) -> ToolClient:
     s = settings or get_settings()
-    if s.tool_dispatch_mode == "http":
+    if s.tool_dispatch_mode is ToolDispatchMode.HTTP:
         return HTTPToolClient(s.application_backend_url, s.bridge_internal_token)
     return LocalToolClient(session)
