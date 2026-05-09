@@ -63,6 +63,50 @@ def system_prompt(
     )
 
 
+# ---- voice test readiness (pre-flight before opening the bridge WS) ----
+
+
+class VoiceTestReadyResponse(BaseModel):
+    ready: bool
+    provider: str
+    model: str
+    reason: str | None = None
+
+
+@router.get("/voice-test/ready", response_model=VoiceTestReadyResponse)
+def voice_test_ready() -> VoiceTestReadyResponse:
+    s = get_settings()
+    if s.gemini_provider == "vertex":
+        if not s.vertex_project:
+            return VoiceTestReadyResponse(
+                ready=False,
+                provider="vertex",
+                model=s.gemini_model,
+                reason="SWITCHBOARD_VERTEX_PROJECT är inte satt på backenden.",
+            )
+        return VoiceTestReadyResponse(
+            ready=True,
+            provider=f"vertex:{s.vertex_location}",
+            model=s.gemini_model,
+        )
+    if not s.gemini_api_key:
+        return VoiceTestReadyResponse(
+            ready=False,
+            provider="api_key",
+            model=s.gemini_model,
+            reason=(
+                "GEMINI_API_KEY är inte satt. Lägg till den i .env.local "
+                "i repo-roten (eller exportera i din shell) och starta om "
+                "backenden."
+            ),
+        )
+    return VoiceTestReadyResponse(
+        ready=True,
+        provider="api_key",
+        model=s.gemini_model,
+    )
+
+
 # ---- scenario runner ----
 
 

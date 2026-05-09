@@ -40,7 +40,7 @@ If/when a codebase or Figma is attached, this README should be revised to point 
 | File | Purpose |
 |---|---|
 | `README.md` | This document — context, content & visual fundamentals, iconography |
-| `colors_and_type.css` | All design tokens — color, type, spacing, radii, shadows |
+| `colors_and_type.css` | All design tokens — color, type, spacing, radii |
 | `fonts/` | Webfonts (currently Geist Sans/Mono — flagged substitution for Söhne) |
 | `assets/` | Wordmark SVG, photo-frame placeholders, signal-orange dot |
 | `preview/` | Design-system cards (Type, Colors, Spacing, Components, Brand) |
@@ -114,8 +114,8 @@ Seven colors, narrowly scoped. Anyone designing in Verkstad who wants to add an 
 | Token | Hex | Role |
 |---|---|---|
 | **havsblå** | `#0A1F33` | Primary brand. Wordmark, navigation, body type on light surfaces. Dark enough to feel substantial; not pure black. |
-| **linne** | `#F4EFE6` | Primary surface. Warm off-white (linen). The dashboard background, marketing surfaces. Borrowed from Pleo's preference for warm whites over clinical whites. |
-| **linne-cool** | `#FAFAF7` | Cooler product variant where contrast against photography is needed. |
+| **linne** | `#FBF8F2` | Primary surface. Warm off-white (linen) — lightened May 2026 to give body copy clear AA contrast. The dashboard background, marketing surfaces. |
+| **linne-cool** | `#FFFFFE` | Cooler product variant where contrast against photography is needed. |
 | **signaloranje** | `#E25822` | The one signal color. Reserved: primary CTA, akutnotis state, wordmark dot, 1–2 marketing moments per year. **Never** for hover states, link underlines, or feature-update highlights. |
 | **tallgrön** | `#2F5233` | Confirmed bookings, positive states. Swedish pine, not bank-app success-toast green. |
 | **larmröd** | `#A82E2E` | Genuinely critical only — gas leak, AI failure, payment failure. Never used in marketing. |
@@ -142,16 +142,13 @@ Two type families do all the work. Söhne for everything (display + body), Söhn
 - **No repeating patterns or textures** in product UI. The dashboard is a piece of paper, not a quilt.
 - The single permitted "background event" is the **akutnotis halo** — the soft orange box-shadow around an active emergency card.
 
-### Borders, shadows, elevation
+### Borders, fills, hierarchy
 
-- **Hairline borders are the default elevation.** A 1px warm-gray border (`--border`) does most of the structural work. Shadows are restrained.
-- **Three shadow tiers**:
-  - `--shadow-1` — flat / hairline-equivalent
-  - `--shadow-2` — popovers, menus
-  - `--shadow-3` — sheets, modals
-- Plus the special **`--shadow-signal`** — a 4px orange ring + soft halo. Reserved for the akutnotis. Do not borrow it for "look at this new feature" moments.
-- **Shadows are warm** — based on `rgba(20, 17, 11, …)`, never the bluish-grey shadow of consumer SaaS.
-- **No glassmorphism.** No frosted-glass cards, no floating widgets, no cinematic backgrounds. Magnus is not impressed and Lena finds it harder to read.
+- **Hairline borders are the only structural cue.** A 1px warm-gray border (`--border`) on `#fff` is the default container. Sunken regions use `--linne-deep` with no border.
+- **Verkstad uses no drop shadows.** Cards do not float, menus do not cast, modals do not lift. Hierarchy comes from type weight, surface fill, and 1–2px borders — never depth.
+- The single permitted "shadow event" is **`--shadow-signal`** — a 4px orange ring + soft halo, reserved for the akutnotis card. Read it as identity, not elevation. Do not borrow it for "look at this new feature" moments.
+- **Focus rings are not shadows** for the purposes of this rule. The 3px navy focus ring on inputs is an accessibility affordance and stays.
+- **No glassmorphism, no gradients, no textures.** Magnus is not impressed and Lena finds it harder to read.
 
 ### Corner radii
 
@@ -163,7 +160,7 @@ Two type families do all the work. Söhne for everything (display + body), Söhn
 
 ### Cards
 
-White or sunken-linen background, hairline border, 14px radius, **shadow-1 max** in resting state. No drop shadows that suggest the card is hovering. The card is sitting on the page, not floating above it. The inverse variant (havsblå) is used for editorial moments — pull-quotes, briefings — not as a default container.
+White or sunken-linen background, hairline border, 14px radius, **no drop shadow**. Cards sit on the page, they don't float above it. If a card needs more emphasis, change its fill or its border weight — never lift it.e it. The inverse variant (havsblå) is used for editorial moments — pull-quotes, briefings — not as a default container.
 
 ### Hover, press, focus
 

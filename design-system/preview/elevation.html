@@ -7,31 +7,22 @@
 <style>
   html, body { margin:0; padding:0; }
   body { background: var(--linne); font-family: var(--font-body); color: var(--fg); padding: 28px 32px; }
-  .row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+  .note { font-size: 13px; color: var(--fg-muted); margin-bottom: 14px; max-width: 640px; line-height: 1.5; }
+  .row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
   .card { background: #fff; border-radius: 14px; height: 96px; display: flex; align-items: flex-end; padding: 12px 14px; }
   .name { font-family: var(--font-mono); font-size: 11px; color: var(--fg-strong); }
   .role { font-size: 11px; color: var(--fg-muted); margin-top: 4px; }
   .hairline { border: 1px solid var(--border); }
-  .e1 { box-shadow: 0 1px 2px rgba(20,17,11,0.06); border: 1px solid var(--border); }
-  .e2 { box-shadow: 0 6px 18px -8px rgba(20,17,11,0.18), 0 2px 4px rgba(20,17,11,0.05); }
-  .e3 { box-shadow: 0 24px 48px -16px rgba(20,17,11,0.22), 0 4px 8px rgba(20,17,11,0.06); }
-  .es { box-shadow: 0 0 0 4px rgba(226,88,34,0.18), 0 8px 24px -6px rgba(226,88,34,0.30); border: 1px solid #E25822; }
+  .sunken { background: var(--linne-deep); }
+  .signal { box-shadow: 0 0 0 4px rgba(226, 88, 34, 0.18), 0 0 0 10px rgba(226,88,34,0.08); border: 1px solid #E25822; }
 </style>
 </head>
-<body>
+<body class="verkstad">
+  <div class="note">Verkstad has <strong>no drop shadows</strong>. Hierarchy is built from hairline borders, surface fills, and type weight. The single permitted exception is the akutnotis halo — and that exists as identity, not elevation.</div>
   <div class="row">
-    <div>
-      <div class="card hairline"><div><div class="name">--bw-hairline</div><div class="role">divider, default card</div></div></div>
-    </div>
-    <div>
-      <div class="card e2"><div><div class="name">--shadow-2</div><div class="role">menu, popover</div></div></div>
-    </div>
-    <div>
-      <div class="card e3"><div><div class="name">--shadow-3</div><div class="role">sheet, modal</div></div></div>
-    </div>
-    <div>
-      <div class="card es"><div><div class="name">--shadow-signal</div><div class="role">akutnotis only</div></div></div>
-    </div>
+    <div class="card hairline"><div><div class="name">Hairline border</div><div class="role">default · cards, panels</div></div></div>
+    <div class="card sunken"><div><div class="name">Sunken fill</div><div class="role">linne-deep · groups</div></div></div>
+    <div class="card signal"><div><div class="name">--shadow-signal</div><div class="role">akutnotis only · sacred</div></div></div>
   </div>
 </body>
 </html>

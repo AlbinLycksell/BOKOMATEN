@@ -23,7 +23,7 @@ const frameStyles = {
     background: "#000",
     borderRadius: 50,
     padding: "10px 8px 8px",
-    boxShadow: "0 24px 48px -16px rgba(20,17,11,0.4), 0 0 0 1px rgba(0,0,0,0.6) inset",
+    
     position: "relative",
     overflow: "hidden",
   },

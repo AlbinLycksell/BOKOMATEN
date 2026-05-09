@@ -78,7 +78,7 @@ const detailStyles = {
     width: 560, maxWidth: "100%",
     background: "var(--linne)",
     overflowY: "auto",
-    boxShadow: "0 24px 48px -16px rgba(20,17,11,0.4)",
+    
   },
   head: { padding: "28px 36px 24px", borderBottom: "1px solid var(--border)", position: "relative" },
   close: {

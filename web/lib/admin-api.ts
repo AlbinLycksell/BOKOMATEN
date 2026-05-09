@@ -58,6 +58,10 @@ async function jpost<T>(path: string, body: unknown): Promise<T> {
 }
 
 export const adminApi = {
+  voiceTestReady: () =>
+    jget<{ ready: boolean; provider: string; model: string; reason: string | null }>(
+      "/api/proxy/admin/voice-test/ready",
+    ),
   systemPrompt: () =>
     jget<{ text: string; length_chars: number; estimated_tokens: number }>(
       "/api/proxy/admin/system-prompt",

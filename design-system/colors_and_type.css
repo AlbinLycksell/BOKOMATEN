@@ -18,10 +18,11 @@
   --havsbla-85:     #1B2D40;  /* hover/press deepening of navy */
   --havsbla-70:     #3D4D5C;  /* secondary type on light surfaces */
 
-  /* Surface — Pleo-warm, not clinical */
-  --linne:          #F4EFE6;  /* primary off-white surface (linen) */
-  --linne-cool:     #FAFAF7;  /* cooler variant for product UI over photography */
-  --linne-deep:     #EAE3D5;  /* dividers, subtle fills, panel backs */
+  /* Surface — Pleo-warm, not clinical. Lightened May 2026 for higher
+     text contrast: linne went from #F4EFE6 → #FBF8F2. */
+  --linne:          #FBF8F2;  /* primary off-white surface (linen) */
+  --linne-cool:     #FFFFFE;  /* cooler variant for product UI over photography */
+  --linne-deep:     #F2ECDF;  /* dividers, subtle fills, panel backs */
 
   /* Signal — sacred. Use only for primary CTA, akutnotis, wordmark dot,
      and 1–2 intentional marketing moments per year. Never decoration. */
@@ -32,13 +33,13 @@
   --tallgron:       #2F5233;  /* confirmed bookings, positive — Swedish pine */
   --larmrod:        #A82E2E;  /* genuine critical state — gas leak / payment fail */
 
-  /* Warm neutral ramp (5 steps + ink). Tuned with a touch of yellow,
-     never blue. These are the dashboard's grays. */
-  --grey-50:        #F1ECE2;
-  --grey-100:       #DDD6C8;
-  --grey-300:       #B5AC9B;
-  --grey-500:       #7C7466;
-  --grey-700:       #4A4538;
+  /* Warm neutral ramp. Tuned warm but darkened for higher contrast on
+     the lighter linne surface (May 2026). */
+  --grey-50:        #F5F0E5;
+  --grey-100:       #E4DDCD;
+  --grey-300:       #A89E8A;
+  --grey-500:       #5E5749;  /* was #7C7466 — darker for AA contrast on linne */
+  --grey-700:       #3A3528;
   --ink:            #14110B;  /* body type on linne — slightly warmer than havsbla */
 
   /* ===== Semantic role tokens ============================ */
@@ -126,17 +127,15 @@
   --bw-hairline: 1px;
   --bw-strong:   2px;
 
-  /* ===== Shadows — restrained. The product is calm. ==== */
-  /* Verkstad uses a soft, warm-tinted shadow. Never the
-     bluish grey shadow of consumer SaaS. */
-  --shadow-1: 0 1px 2px rgba(20, 17, 11, 0.06);
-  --shadow-2: 0 6px 18px -8px rgba(20, 17, 11, 0.18),
-              0 2px 4px rgba(20, 17, 11, 0.05);
-  --shadow-3: 0 24px 48px -16px rgba(20, 17, 11, 0.22),
-              0 4px 8px rgba(20, 17, 11, 0.06);
+  /* ===== Elevation — NO drop shadows. Borders do all structural work.
+     The akutnotis halo is the ONE permitted shadow event; it functions
+     as identity, not depth. =================================== */
+  --shadow-1: 0 0 0 0 transparent;
+  --shadow-2: 0 0 0 0 transparent;
+  --shadow-3: 0 0 0 0 transparent;
   /* The signal halo — used ONLY on the akutnotis card */
   --shadow-signal: 0 0 0 4px rgba(226, 88, 34, 0.18),
-                   0 8px 24px -6px rgba(226, 88, 34, 0.30);
+                   0 0 0 10px rgba(226, 88, 34, 0.08);
 
   /* ===== Motion ========================================= */
   --ease-standard: cubic-bezier(0.2, 0.0, 0.0, 1.0);   /* functional */
@@ -311,7 +310,7 @@
   background: #FFFFFF;
   border: var(--bw-hairline) solid var(--border);
   border-radius: var(--r-card);
-  box-shadow: var(--shadow-1);
+  /* No drop shadow — hairline border is the structural cue. */
 }
 .v-card--sunken {
   background: var(--linne-deep);

@@ -27,7 +27,7 @@ const wStyles = {
     background: "#1a1a1a",
     borderRadius: 48,
     padding: 12,
-    boxShadow: "0 24px 48px -16px rgba(20,17,11,0.4)",
+    
   },
   screen: {
     width: "100%", height: "100%",

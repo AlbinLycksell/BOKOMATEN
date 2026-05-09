@@ -46,6 +46,19 @@ log = get_logger("switchboard.bridge")
 router = APIRouter()
 
 
+def _classify_exception_for_client(exc: BaseException) -> str:
+    msg = str(exc).lower()
+    if "api key" in msg or "unauthorized" in msg or "permission" in msg or "401" in msg:
+        return "gemini_auth_failed"
+    if "model" in msg and ("not found" in msg or "permission" in msg):
+        return "gemini_model_unavailable"
+    if "quota" in msg or "rate" in msg or "exhausted" in msg:
+        return "gemini_quota_exhausted"
+    if "websocket" in msg or "connection" in msg:
+        return "gemini_connect_failed"
+    return f"bridge_error:{exc.__class__.__name__}"
+
+
 @router.websocket("/ws/bridge/{firma_id}/{call_id}")
 async def bridge(websocket: WebSocket, firma_id: str, call_id: str) -> None:
     await websocket.accept()
@@ -97,8 +110,14 @@ async def bridge(websocket: WebSocket, firma_id: str, call_id: str) -> None:
                         await receive_task
         except WebSocketDisconnect:
             log.info("bridge.disconnected")
-        except Exception:  # noqa: BLE001
+        except Exception as exc:  # noqa: BLE001
             log.exception("bridge.error")
+            # Tell the client *why* we're hanging up. Without this the browser
+            # only sees a 1006 close and has to guess.
+            reason = _classify_exception_for_client(exc)
+            with contextlib.suppress(Exception):
+                await websocket.send_json({"t": "bye", "reason": reason})
+                await websocket.close(code=1011)
         finally:
             call.ended_at = utcnow()
             call.status = CallStatus.COMPLETED

@@ -6,12 +6,32 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { adminApi } from "@/lib/admin-api";
 
 const FIRMA_ID = "01J0000FIRM0ANDERSSONSVVS00";
 const PLAYBACK_RATE = 24_000; // matches Gemini Live audio output
 const TEST_PHONE = "+46708000000";
 
-type ConnState = "idle" | "requesting_mic" | "connecting" | "live" | "ending" | "ended";
+type ConnState =
+  | "idle"
+  | "checking"
+  | "requesting_mic"
+  | "connecting"
+  | "live"
+  | "ending"
+  | "ended";
+
+const REASON_MESSAGES: Record<string, string> = {
+  gemini_auth_failed:
+    "Gemini avvisade autentiseringen. GEMINI_API_KEY är ogiltig, utgången, eller i fel projekt.",
+  gemini_model_unavailable:
+    "Gemini-modellen är otillgänglig för det här projektet. Kontrollera SWITCHBOARD_GEMINI_MODEL.",
+  gemini_quota_exhausted:
+    "Gemini-quota är slut för det här projektet eller minuten. Vänta en stund eller höj rate-limit.",
+  gemini_connect_failed:
+    "Bryggan kunde inte ansluta till Gemini Live. Vanligtvis nätverk eller GEMINI_API_KEY saknas.",
+  unknown_firma: "Okänd firma — bridge fick fel firma_id.",
+};
 
 interface Stats {
   framesSent: number;
@@ -35,6 +55,7 @@ export function VoiceTest() {
   const [callId, setCallId] = useState<string | null>(null);
   const [stats, setStats] = useState<Stats>(blankStats);
   const [muted, setMuted] = useState(false);
+  const [providerLabel, setProviderLabel] = useState<string | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -42,6 +63,8 @@ export function VoiceTest() {
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const playCursorRef = useRef<number>(0);
+  const userClosingRef = useRef(false);
+  const serverReasonRef = useRef<string | null>(null);
 
   const cleanup = () => {
     try {
@@ -68,7 +91,31 @@ export function VoiceTest() {
 
   const start = async () => {
     setError(null);
+    userClosingRef.current = false;
+    serverReasonRef.current = null;
     setStats({ ...blankStats, startedAt: Date.now() });
+    setState("checking");
+
+    // Pre-flight: verify Gemini is configured before opening the WS.
+    try {
+      const ready = await adminApi.voiceTestReady();
+      setProviderLabel(`${ready.provider} · ${ready.model}`);
+      if (!ready.ready) {
+        setError(
+          ready.reason ??
+            "Voice test inte konfigurerat på backenden. Sätt GEMINI_API_KEY och starta om.",
+        );
+        setState("idle");
+        return;
+      }
+    } catch (e) {
+      setError(
+        `Kunde inte nå backenden för pre-flight: ${e}. Kontrollera att uvicorn kör på port 8000.`,
+      );
+      setState("idle");
+      return;
+    }
+
     setState("requesting_mic");
 
     try {
@@ -143,8 +190,11 @@ export function VoiceTest() {
             bytesReceived: s.bytesReceived + ab.byteLength,
           }));
         } else if (msg.t === "bye") {
-          cleanup();
-          setState("ended");
+          // Server-initiated bye carries a reason. Surface it immediately.
+          if (typeof msg.reason === "string" && msg.reason) {
+            serverReasonRef.current = msg.reason;
+            setError(REASON_MESSAGES[msg.reason] ?? `Bridge avslutade: ${msg.reason}`);
+          }
         }
       } catch {
         /* non-JSON or non-audio frame */
@@ -152,18 +202,28 @@ export function VoiceTest() {
     };
 
     ws.onerror = () => {
-      setError("Bridge-WS fel — kontrollera att backend kör + GEMINI_API_KEY satt");
+      // Don't show a generic message here — `onclose` runs right after with
+      // more useful info (and any server bye reason already set).
     };
 
     ws.onclose = (ev) => {
-      if (state !== "ended") {
+      // User pressed Stop → graceful close, no error.
+      if (userClosingRef.current) {
         setState("ended");
-        if (!ev.wasClean) {
-          setError(
-            `WebSocket stängd (kod ${ev.code}). Vanligaste orsaker: GEMINI_API_KEY saknas, ` +
-              `firma okänd, eller backend nere.`,
-          );
-        }
+        return;
+      }
+      // Server already told us why via {t:"bye",reason} → keep that error.
+      if (serverReasonRef.current) {
+        setState("ended");
+        return;
+      }
+      // Otherwise it's an unexpected drop — surface code + best guess.
+      setState("ended");
+      if (!ev.wasClean) {
+        setError(
+          `WebSocket föll (kod ${ev.code}). Backenden tappade förbindelsen oväntat — ` +
+            `kontrollera uvicorn-loggen.`,
+        );
       }
     };
 
@@ -184,6 +244,7 @@ export function VoiceTest() {
   };
 
   const stop = () => {
+    userClosingRef.current = true;
     setState("ending");
     try {
       wsRef.current?.send(JSON.stringify({ t: "bye" }));
@@ -250,6 +311,7 @@ export function VoiceTest() {
               <li>✓ Audio-uppsampling 48k → 24k → bridge</li>
               <li>✓ Verklig Gemini Live-tur</li>
               <li>✓ Tool-anrop, transkript, post-call-summering</li>
+              <li className="text-text-faint">— 46elks bypassas helt</li>
             </ul>
           </div>
         </div>
@@ -274,11 +336,14 @@ export function VoiceTest() {
           {state === "live" ? (
             <span className="text-xs text-text-muted ml-auto">{elapsed}s aktivt</span>
           ) : null}
+          {providerLabel ? (
+            <Badge variant="neutral" className="ml-auto">
+              {providerLabel}
+            </Badge>
+          ) : null}
         </div>
 
-        {error ? (
-          <p className="text-sm text-critical">{error}</p>
-        ) : null}
+        {error ? <p className="text-sm text-critical">{error}</p> : null}
 
         {state === "live" || state === "ended" ? (
           <div className="grid gap-2 md:grid-cols-4 text-xs">
@@ -309,6 +374,7 @@ export function VoiceTest() {
 function StatePill({ state }: { state: ConnState }) {
   const map: Record<ConnState, [string, "neutral" | "warning" | "success" | "critical"]> = {
     idle: ["Inaktiv", "neutral"],
+    checking: ["Pre-flight…", "warning"],
     requesting_mic: ["Begär mic…", "warning"],
     connecting: ["Ansluter…", "warning"],
     live: ["LIVE", "success"],
