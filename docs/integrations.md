@@ -1,62 +1,96 @@
 # Integrations setup guide
 
-Each external system is wired through a typed client under `backend/src/svarsa/integrations/`. This doc tells you how to enable each one.
+Each external system is wired through a typed client under `backend/src/svarsa/integrations/`. Per-tenant OAuth refresh tokens are KMS-encrypted at rest and stored in `Integration.sync_state`.
 
 ## 46elks (telephony + SMS)
 
-### Voice (inbound calls)
+### Voice — pcm_24000 streaming
 
-1. 46elks dashboard → Numbers → click your Swedish number → "Voice Settings".
-2. Set "URL when called" to `https://app.svarsa.se/api/integrations/elks/voice/inbound` (HTTP POST).
-3. Verify with a test call to your number — you should land in the bridge logs within 1–2 s.
+The bridge implements the official 46elks Voice Streaming protocol (https://46elks.fi/tutorials/real-time-two-way-voice-calls-with-websocket).
 
-### SMS
+1. 46elks dashboard → Numbers → your Swedish number → Voice Settings.
+2. "URL when called" → `https://app.svarsa.se/api/integrations/elks/voice/inbound`.
+3. Webhook returns `{"connect":"wss://bridge.svarsa.se/ws/bridge/{firma}/{call}"}` and 46elks opens that WebSocket.
+4. Audio flows in JSON-typed messages (`{"t":"audio","data":"<base64 PCM 24kHz mono int16>"}`). Bridge handles `hello` / `audio` / `sync` / `bye` per the protocol.
 
-1. 46elks dashboard → SMS → Senders → Add sender — submit firma name and a permission letter.
+### SMS — per-firma verified sender ids
+
+1. 46elks dashboard → SMS → Senders → Add sender. Submit firma name + org-nummer + permission letter.
 2. Wait 3–5 business days for verification.
-3. Set `SVARSA_ELKS_DEFAULT_SENDER_ID` for the platform default (`Svarsa`).
-4. Per-firma sender ids: stored in `Firma.settings` (UI: settings page → SMS sender) and passed via `send_sms(sender_id=...)`.
+3. Owner edits the sender id from Settings → Integrationer → SMS sender. Backend sends with that id only when `Firma.settings.sms_sender_id_verified` is true; otherwise falls back to platform `Svarsa`.
 
 ### Env
 
 | Var | Purpose |
 |---|---|
-| `SVARSA_ELKS_API_USERNAME` | API auth username |
-| `SVARSA_ELKS_API_PASSWORD` | API auth password |
-| `SVARSA_ELKS_DEFAULT_SENDER_ID` | Platform fallback sender id |
-| `SVARSA_ELKS_WEBHOOK_SECRET` | Reserved for HMAC verification (P15+) |
+| `SVARSA_ELKS_API_USERNAME` / `SVARSA_ELKS_API_PASSWORD` | 46elks API auth |
+| `SVARSA_ELKS_DEFAULT_SENDER_ID` | Platform fallback sender id (default `Svarsa`) |
+| `SVARSA_ELKS_WEBHOOK_SECRET` | Reserved for HMAC verification |
 
 ## Vertex AI (Gemini Live)
 
 1. GCP console → APIs → enable `aiplatform.googleapis.com`.
-2. Grant `roles/aiplatform.user` on each Cloud Run service account (Terraform does this via `workload_identity` module).
-3. Set `SVARSA_GEMINI_PROVIDER=vertex` + `SVARSA_VERTEX_PROJECT=<id>` + `SVARSA_VERTEX_LOCATION=europe-west4` in Cloud Run env.
+2. Cloud Run service account gets `roles/aiplatform.user` (Terraform `workload_identity` module).
+3. `SVARSA_GEMINI_PROVIDER=vertex`, `SVARSA_VERTEX_PROJECT=<project>`, `SVARSA_VERTEX_LOCATION=europe-west4`.
 
-The `google-genai` client picks up Application Default Credentials from the service account.
+The `google-genai` client picks up Application Default Credentials. EU residency, Customer Data Use commitments, no training on inputs.
 
-## Fortnox (planned)
+## Fortnox
 
-Outline; full client lands with Step 7 of next-steps.
+OAuth 2.0 Authorization Code flow. Tokens: access 1h, refresh 45 days (Fortnox rotates both on each refresh — we store atomically).
 
-1. https://developer.fortnox.se/ → Sign up. Approval ~1–3 business days.
+1. https://developer.fortnox.se/ → Sign up → application type "Integrationspartner". Approval ~1–3 business days.
 2. Create OAuth application → redirect URL `https://app.svarsa.se/api/integrations/fortnox/callback`.
-3. Scopes: `customer`, `bookkeeping`, `invoice` (read), `connectfile`.
-4. Per-firma OAuth tokens encrypted with a tenant DEK; stored in `Integration.sync_state`.
-5. Owner connects from Settings → Integrations → "Anslut Fortnox".
+3. Scopes: `companyinformation customer invoice bookkeeping settings`.
+4. Set `SVARSA_FORTNOX_CLIENT_ID` + `SVARSA_FORTNOX_CLIENT_SECRET` in Secret Manager.
+5. Owner clicks "Anslut Fortnox" in Settings → backend redirects to Fortnox consent → callback persists per-tenant tokens (KMS-encrypted via per-firma CryptoKey).
+6. Trigger initial customer sync: `POST /api/integrations/fortnox/sync` (also runs on a 60s schedule once Cloud Tasks is wired).
 
-## Hantverksdata Next (planned)
+Source: `backend/src/svarsa/integrations/fortnox.py`.
 
-1. Email `partners@hantverksdata.se` to start partneravtal (~2–4 months).
-2. On approval: API credentials stored in Secret Manager + per-tenant DEK-encrypted refresh tokens in Postgres.
+## Visma eEkonomi
 
-## Visma eEkonomi (planned)
+Same shape as Fortnox. Identity provider: `https://identity.vismaonline.com/connect/authorize`. API base: `https://eaccountingapi.vismaonline.com/v2/`. Scope: `ea:api offline_access`.
 
-Same shape as Fortnox. https://developer.visma.com/.
+1. https://developer.visma.com/ → Sign up.
+2. Create application → redirect URL `https://app.svarsa.se/api/integrations/visma/callback`.
+3. `SVARSA_VISMA_CLIENT_ID` + `SVARSA_VISMA_CLIENT_SECRET` in Secret Manager.
 
-## Google Calendar (planned)
+Source: `backend/src/svarsa/integrations/visma_eekonomi.py`.
 
-Same OAuth client as auth (Step 3) + add `https://www.googleapis.com/auth/calendar` scope. Bidirectional CalDAV sync.
+## Google Calendar
 
-## Bolagsverket (planned)
+Reuses the same Google OAuth client used by NextAuth, plus the
+`https://www.googleapis.com/auth/calendar.events` scope.
 
-Public org-number lookup. No auth. Cached 7 days in Redis (when Memorystore lands).
+1. GCP console → Credentials → OAuth client → Authorized redirect URIs include `https://app.svarsa.se/api/integrations/google-calendar/callback`.
+2. `SVARSA_GOOGLE_OAUTH_CLIENT_ID` + `SVARSA_GOOGLE_OAUTH_CLIENT_SECRET` in Secret Manager.
+
+Bidirectional sync: AI bookings create events; existing busy slots are read on `check_availability` to avoid double-booking.
+
+Source: `backend/src/svarsa/integrations/google_calendar.py`.
+
+## Stripe Billing
+
+Recommended flow per https://docs.stripe.com/billing/subscriptions/build-subscriptions.
+
+1. Stripe Dashboard → create three Products + recurring monthly Prices: Starter (1495 SEK), Professional (2995 SEK), Premium (5995+ SEK).
+2. Set the price ids in env: `SVARSA_STRIPE_PRICE_STARTER`, `_PROFESSIONAL`, `_PREMIUM`.
+3. Webhook endpoint: `POST https://app.svarsa.se/api/billing/webhook` with events `checkout.session.completed`, `customer.subscription.{created,updated,deleted}`, `invoice.{paid,payment_failed}`. Copy the webhook signing secret to `SVARSA_STRIPE_WEBHOOK_SECRET`.
+4. From the dashboard, owner clicks "Uppgradera plan" → backend creates a Checkout Session → owner pays → webhook flips `Firma.subscription_status` to `active` and updates `Firma.plan` from the price.
+5. Plan limits enforced at call ingress (`integrations.stripe_billing.check_call_allowed`); over-quota or delinquent firmor get a busy-tone hangup.
+
+Source: `backend/src/svarsa/integrations/stripe_billing.py`.
+
+## Hantverksdata Next (partner-gated)
+
+Long-running partneravtal:
+
+1. Email `partners@hantverksdata.se` with a 1-page deck + concrete demo.
+2. ETA 2–4 months. On approval, API credentials land in Secret Manager + per-tenant DEK-encrypted refresh tokens follow the same shape as Fortnox.
+
+Strategic moat (PRD §8.7.2). The integration shape mirrors Fortnox (auth-code OAuth, customer + project endpoints) so swapping the client should be a 1-week task once credentials arrive.
+
+## Bolagsverket
+
+Public org-number lookup, no auth. Currently invoked inline; cache via Memorystore Redis in production once concurrent firmor justify it.
