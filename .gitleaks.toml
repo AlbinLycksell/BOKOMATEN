@@ -1,0 +1,35 @@
+# Switchboard gitleaks config.
+# Extends the default ruleset (https://github.com/gitleaks/gitleaks/blob/master/config/gitleaks.toml)
+# and adds a project-specific allowlist for known-benign patterns.
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Switchboard project allowlist"
+
+# Files we deliberately commit that contain secret-shaped placeholders or
+# example values. Real secrets never live in these locations.
+# CI workflows live here too — they reference secret *names* (e.g.
+# `${{ secrets.GEMINI_API_KEY }}`) but never embed values.
+paths = [
+  '''(.+)?\.gitleaks\.toml''',
+  '''docs/.*\.md''',
+  '''web/\.env\.local\.example''',
+  '''web/pnpm-lock\.yaml''',
+  '''backend/uv\.lock''',
+  '''\.github/workflows/.*\.ya?ml''',
+]
+
+# Hardcoded values that are intentional and not credentials:
+#   - The demo firma id (Anderssons VVS) used in seed data and test fixtures.
+#   - Placeholder strings used in env example files / docs.
+regexes = [
+  '''01J0000FIRM0ANDERSSONSVVS00''',
+  '''<your[\- ][a-z\- ]+>''',
+  '''<openssl rand[^>]*>''',
+  '''<dev oauth[^>]*>''',
+  '''<prod oauth[^>]*>''',
+  '''<sensitive>''',
+  '''sk_test_REPLACE_ME''',
+]

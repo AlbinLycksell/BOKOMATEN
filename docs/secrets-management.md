@@ -233,15 +233,28 @@ Three principal types matter:
 
 ## Pre-commit hygiene
 
-Run `gitleaks` (or `trufflehog`) as a pre-commit hook. It catches the common patterns — `sk_live_…`, `whsec_…`, GCP service-account JSON, AWS keys — before they hit the index. Configure it once at the repo level so every dev's commits are scanned.
+`gitleaks` is wired in three places — pick whichever matches your workflow:
 
-```bash
-# .pre-commit-config.yaml
-- repo: https://github.com/gitleaks/gitleaks
-  rev: v8.21.0
-  hooks:
-    - id: gitleaks
-```
+1. **Pre-commit hook** (per-developer) — runs on every `git commit`, blocks the commit if a secret-shaped value is staged.
+
+   ```bash
+   # one-time, per clone
+   make hooks
+   # or directly:
+   pre-commit install
+   ```
+
+   Config lives in `.pre-commit-config.yaml` at the repo root.
+
+2. **Makefile target** (manual scan, ad-hoc) — scan the entire history when investigating a leak.
+
+   ```bash
+   make secrets-scan
+   ```
+
+3. **GitHub Actions** (`.github/workflows/gitleaks.yml`) — runs on every push and pull request. Defense-in-depth: catches anything that bypassed the pre-commit hook (`--no-verify`, fresh clone without `pre-commit install`).
+
+The shared allowlist for known-benign patterns (the demo firma id, env example placeholders, lockfiles, doc files, CI workflow files) lives in `.gitleaks.toml` at the repo root. Update it when you intentionally introduce a new secret-shaped placeholder; never to silence a real finding.
 
 If a secret does land in a commit:
 
