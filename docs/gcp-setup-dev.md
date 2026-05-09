@@ -67,6 +67,30 @@ BILLING="0X0X0X-XXXXXX-XXXXXX"           # gcloud beta billing accounts list
 gcloud beta billing projects link "$DEV_PROJECT" --billing-account "$BILLING"
 ```
 
+If your org has a tag policy you'll see a warning right after `projects create`:
+
+> *Project '…' lacks an 'environment' tag. Please create or add a tag with key 'environment' and a value like 'Production', 'Development', …*
+
+That's a warning, not a block — but bind the tag now (some orgs harden it to a hard block later, and billing rollups by environment depend on it):
+
+```bash
+ORG_ID=$(gcloud organizations list --format='value(ID)' | head -1)
+TAG_KEY_ID=$(gcloud resource-manager tags keys list \
+  --parent="organizations/$ORG_ID" \
+  --filter='shortName=environment' --format='value(name)' | sed 's|tagKeys/||')
+TAG_VALUE_ID=$(gcloud resource-manager tags values list \
+  --parent="tagKeys/$TAG_KEY_ID" \
+  --filter='shortName=Development' --format='value(name)' | sed 's|tagValues/||')
+PROJECT_NUMBER=$(gcloud projects describe "$DEV_PROJECT" --format='value(projectNumber)')
+
+gcloud resource-manager tags bindings create \
+  --location=global \
+  --tag-value="tagValues/$TAG_VALUE_ID" \
+  --parent="//cloudresourcemanager.googleapis.com/projects/$PROJECT_NUMBER"
+```
+
+If `gcloud organizations list` returns nothing, your account isn't in a GCP org → no tag policy applies → skip this step.
+
 Enable the always-needed APIs in one shot:
 
 ```bash
