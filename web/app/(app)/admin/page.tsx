@@ -6,6 +6,7 @@ import { SystemPromptPreview } from "@/components/admin/system-prompt-preview";
 import { TestActions } from "@/components/admin/test-actions";
 import { AuditLogViewer } from "@/components/admin/audit-log-viewer";
 import { EvalRunner } from "@/components/admin/eval-runner";
+import { VoiceTest } from "@/components/admin/voice-test";
 
 export const dynamic = "force-dynamic";
 
@@ -61,11 +62,20 @@ export default async function AdminPage() {
       />
       <div className="flex-1 overflow-y-auto bg-bg">
         <div className="mx-auto max-w-6xl px-6 py-6 grid gap-8">
-          <Section title="Emulera samtal">
+          <Section title="Röstprov (live)">
             <p className="text-sm text-text-muted mb-4">
-              Kör hela pipen för en realistisk svensk scenarie — triage,
-              verktygsplaybook, post-call-summering, audit-logg, kostnadsspårning.
-              Resultatet dyker upp i inkorgen omedelbart, precis som ett riktigt samtal.
+              Riktigt ljud, riktig Gemini Live, samma WebSocket-bridge som 46elks
+              använder i produktion. Klicka starta och prata med AI:n från
+              webbläsaren — transkript och verktygsanrop landar i inkorgen direkt.
+            </p>
+            <VoiceTest />
+          </Section>
+
+          <Section title="Emulera samtal (text)">
+            <p className="text-sm text-text-muted mb-4">
+              Kör hela pipen deterministiskt — triage, verktygsplaybook,
+              post-call-summering, audit-logg, kostnadsspårning. Ingen audio,
+              ingen Gemini-anslutning krävs. Bra för CI / utveckling.
             </p>
             {presets.length === 0 ? (
               <Card>
