@@ -15,16 +15,18 @@ from svarsa.api import (
     routes_firma,
     routes_health,
     routes_integrations,
+    routes_metrics,
     routes_tools,
+    routes_training,
     ws_inbox,
 )
 from svarsa.bridge import ws as bridge_ws
-from svarsa.integrations import elks_voice
 from svarsa.core.config import get_settings
 from svarsa.core.logging import configure_logging, get_logger
 from svarsa.core.middleware import TenantMiddleware
 from svarsa.db.seed import DEMO_FIRMA_ID
 from svarsa.db.session import init_db
+from svarsa.integrations import elks_voice
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
@@ -36,6 +38,18 @@ async def _lifespan(app: FastAPI) -> "AsyncIterator[None]":
     configure_logging(settings)
     log = get_logger("svarsa.app")
     log.info("startup", env=settings.env, version=__version__)
+    if settings.sentry_dsn:
+        try:
+            import sentry_sdk
+
+            sentry_sdk.init(
+                dsn=settings.sentry_dsn,
+                environment=settings.sentry_environment or settings.env,
+                traces_sample_rate=0.1,
+                send_default_pii=False,
+            )
+        except Exception:  # noqa: BLE001
+            log.exception("sentry.init_failed")
     init_db()
     if settings.seed_dev_data and settings.env == "dev":
         from svarsa.db.seed import seed_dev_data
@@ -71,6 +85,8 @@ def create_app() -> FastAPI:
     app.include_router(routes_tools.router)
     app.include_router(routes_integrations.router)
     app.include_router(routes_billing.router)
+    app.include_router(routes_training.router)
+    app.include_router(routes_metrics.router)
     app.include_router(elks_voice.router)
     app.include_router(ws_inbox.router)
     app.include_router(bridge_ws.router)

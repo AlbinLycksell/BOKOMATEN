@@ -67,9 +67,21 @@ def send_sms(
     template: SmsTemplate,
     context_data: dict[str, str | int | bool],
     sender_id: str | None = None,
+    firma_sender_id: str | None = None,
+    firma_sender_id_verified: bool = False,
 ) -> SendSmsFollowupResult:
+    """Send an SMS with the firma's verified sender id when available.
+
+    Resolution order:
+    - explicit ``sender_id`` arg (rare; debug only)
+    - per-firma alias if verified (best UX — recipient sees firma name)
+    - platform default (`Settings.elks_default_sender_id` = `"Svarsa"`)
+    """
     settings = get_settings()
     body = render_template(template, context_data)
+    resolved_sender = sender_id or (
+        firma_sender_id if firma_sender_id_verified and firma_sender_id else None
+    )
     if not settings.elks_api_username:
         sms_id = new_id()
         log.info(
@@ -82,7 +94,7 @@ def send_sms(
         return SendSmsFollowupResult(sent=True, sms_id=sms_id)
     client = ElksSMSClient(settings)
     try:
-        result = client.send(to=to_phone, message=body, sender_id=sender_id)
+        result = client.send(to=to_phone, message=body, sender_id=resolved_sender)
         return SendSmsFollowupResult(
             sent=bool(result.get("status") in (None, "delivered", "queued", "created")),
             sms_id=str(result.get("id", new_id())),
