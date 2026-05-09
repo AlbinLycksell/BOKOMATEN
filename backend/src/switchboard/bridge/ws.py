@@ -38,7 +38,23 @@ from switchboard.core.logging import get_logger
 from switchboard.core.tenant import firma_context
 from switchboard.core.time import to_utc_aware, utcnow
 from switchboard.db.session import get_engine
-from switchboard.models import Call, CallStatus, Firma, TranscriptRole, TranscriptSegment
+from switchboard.models import (
+    AudioFormat,
+    AudioMimeType,
+    AuditAction,
+    AuditActor,
+    AuditTargetType,
+    BridgeBye,
+    BridgeWSEvent,
+    Call,
+    CallSource,
+    CallStatus,
+    Firma,
+    InboxEvent,
+    ToolName,
+    TranscriptRole,
+    TranscriptSegment,
+)
 from switchboard.services import cost_service, recording_service, redaction_service
 from switchboard.tools.client import ToolClient, make_tool_client
 
@@ -46,16 +62,32 @@ log = get_logger("switchboard.bridge")
 router = APIRouter()
 
 
-def _classify_exception_for_client(exc: BaseException) -> str:
+_BYE_FIELD_REASON = "reason"
+_AUDIO_FIELD_DATA = "data"
+_HELLO_FIELD_FROM = "from"
+_HELLO_FIELD_CALLID = "callid"
+_TRANSCRIPT_FIELD_ROLE = "role"
+_TRANSCRIPT_FIELD_TEXT = "text"
+_FRAME_FIELD_TYPE = "t"
+_FRAME_FIELD_FORMAT = "format"
+_LEGACY_EVENT_KEY = "event"
+_LEGACY_PAYLOAD_KEY = "payload"
+_LEGACY_AUDIO_FIELD = "audio_b64"
+
+_WS_CLOSE_POLICY = 1008
+_WS_CLOSE_INTERNAL = 1011
+
+
+def _classify_exception_for_client(exc: BaseException) -> BridgeBye | str:
     msg = str(exc).lower()
     if "api key" in msg or "unauthorized" in msg or "permission" in msg or "401" in msg:
-        return "gemini_auth_failed"
+        return BridgeBye.GEMINI_AUTH_FAILED
     if "model" in msg and ("not found" in msg or "permission" in msg):
-        return "gemini_model_unavailable"
+        return BridgeBye.GEMINI_MODEL_UNAVAILABLE
     if "quota" in msg or "rate" in msg or "exhausted" in msg:
-        return "gemini_quota_exhausted"
+        return BridgeBye.GEMINI_QUOTA_EXHAUSTED
     if "websocket" in msg or "connection" in msg:
-        return "gemini_connect_failed"
+        return BridgeBye.GEMINI_CONNECT_FAILED
     return f"bridge_error:{exc.__class__.__name__}"
 
 
@@ -63,16 +95,29 @@ def _classify_exception_for_client(exc: BaseException) -> str:
 async def bridge(websocket: WebSocket, firma_id: str, call_id: str) -> None:
     await websocket.accept()
 
+    try:
+        source = CallSource(websocket.query_params.get("source"))
+    except ValueError:
+        source = CallSource.TELEPHONY
+
     with firma_context(firma_id), Session(get_engine()) as db:
-        structlog.contextvars.bind_contextvars(call_id=call_id)
+        structlog.contextvars.bind_contextvars(call_id=call_id, source=source)
         log.info("bridge.connected")
         firma = db.get(Firma, firma_id)
         if firma is None:
-            await websocket.send_json({"t": "bye", "reason": "unknown_firma"})
-            await websocket.close(code=1008)
+            await websocket.send_json(
+                {_FRAME_FIELD_TYPE: BridgeWSEvent.BYE.value, _BYE_FIELD_REASON: BridgeBye.UNKNOWN_FIRMA.value}
+            )
+            await websocket.close(code=_WS_CLOSE_POLICY)
             return
 
-        call = Call(id=call_id, firma_id=firma_id, status=CallStatus.IN_PROGRESS)
+        call = Call(
+            id=call_id,
+            firma_id=firma_id,
+            status=CallStatus.IN_PROGRESS,
+            source=source,
+            gemini_session_id=f"{source.value}:{call_id}",
+        )
         db.add(call)
         db.commit()
         db.refresh(call)
@@ -81,13 +126,16 @@ async def bridge(websocket: WebSocket, firma_id: str, call_id: str) -> None:
 
         await publish(
             firma_id,
-            "inbox.call.created",
+            InboxEvent.CALL_CREATED.value,
             {"id": call.id, "started_at": call.started_at.isoformat()},
         )
 
-        # Declare bidirectional PCM 24kHz immediately.
-        await websocket.send_json({"t": "sending", "format": "pcm_24000"})
-        await websocket.send_json({"t": "listening", "format": "pcm_24000"})
+        await websocket.send_json(
+            {_FRAME_FIELD_TYPE: BridgeWSEvent.SENDING.value, _FRAME_FIELD_FORMAT: AudioFormat.PCM_24K.value}
+        )
+        await websocket.send_json(
+            {_FRAME_FIELD_TYPE: BridgeWSEvent.LISTENING.value, _FRAME_FIELD_FORMAT: AudioFormat.PCM_24K.value}
+        )
 
         tracker = UsageTracker(call_id=call.id)
         tool_client = make_tool_client(db)
@@ -112,12 +160,13 @@ async def bridge(websocket: WebSocket, firma_id: str, call_id: str) -> None:
             log.info("bridge.disconnected")
         except Exception as exc:  # noqa: BLE001
             log.exception("bridge.error")
-            # Tell the client *why* we're hanging up. Without this the browser
-            # only sees a 1006 close and has to guess.
             reason = _classify_exception_for_client(exc)
+            reason_str = reason.value if isinstance(reason, BridgeBye) else reason
             with contextlib.suppress(Exception):
-                await websocket.send_json({"t": "bye", "reason": reason})
-                await websocket.close(code=1011)
+                await websocket.send_json(
+                    {_FRAME_FIELD_TYPE: BridgeWSEvent.BYE.value, _BYE_FIELD_REASON: reason_str}
+                )
+                await websocket.close(code=_WS_CLOSE_INTERNAL)
         finally:
             call.ended_at = utcnow()
             call.status = CallStatus.COMPLETED
@@ -144,7 +193,7 @@ async def bridge(websocket: WebSocket, firma_id: str, call_id: str) -> None:
                     db.exec(
                         select(ToolInvocation)
                         .where(ToolInvocation.call_id == call.id)
-                        .where(ToolInvocation.name == "send_sms_followup")
+                        .where(ToolInvocation.name == ToolName.SEND_SMS_FOLLOWUP.value)
                     ).all()
                 )
                 breakdown = cost_service.compute(
@@ -173,7 +222,7 @@ async def bridge(websocket: WebSocket, firma_id: str, call_id: str) -> None:
             schedule_post_call_summary(call.id)
             await publish(
                 firma_id,
-                "inbox.call.updated",
+                InboxEvent.CALL_UPDATED.value,
                 {
                     "id": call.id,
                     "status": call.status.value,
@@ -196,31 +245,37 @@ async def _drain_provider(
 ) -> None:
     while True:
         msg = await websocket.receive_json()
-        event = msg.get("t") or msg.get("event")  # `t` is 46elks; `event` is dev/test
-        if event == "hello":
-            caller_phone = msg.get("from")
+        raw_event = msg.get(_FRAME_FIELD_TYPE) or msg.get(_LEGACY_EVENT_KEY)
+        try:
+            event = BridgeWSEvent(raw_event) if raw_event else None
+        except ValueError:
+            event = None
+        if event is BridgeWSEvent.HELLO:
+            caller_phone = msg.get(_HELLO_FIELD_FROM)
             if caller_phone:
                 call.caller_phone = caller_phone
                 db.add(call)
                 db.commit()
-            log.info("bridge.hello", caller=caller_phone, callid=msg.get("callid"))
+            log.info("bridge.hello", caller=caller_phone, callid=msg.get(_HELLO_FIELD_CALLID))
             continue
-        if event == "audio":
-            audio_b64 = msg.get("data") or (msg.get("payload") or {}).get("audio_b64", "")
+        if event is BridgeWSEvent.AUDIO:
+            audio_b64 = msg.get(_AUDIO_FIELD_DATA) or (msg.get(_LEGACY_PAYLOAD_KEY) or {}).get(
+                _LEGACY_AUDIO_FIELD, ""
+            )
             if not audio_b64:
                 continue
             pcm24 = base64.b64decode(audio_b64)
             recording.add_caller_pcm24k(pcm24)
             pcm16 = audio_codec.pcm24k_to_pcm16k(pcm24)
             await session.send_realtime_input(
-                audio=gtypes.Blob(data=pcm16, mime_type="audio/pcm;rate=16000")
+                audio=gtypes.Blob(data=pcm16, mime_type=AudioMimeType.PCM_16K.value)
             )
             continue
-        if event == "sync":
-            await websocket.send_json({"t": "sync"})
+        if event is BridgeWSEvent.SYNC:
+            await websocket.send_json({_FRAME_FIELD_TYPE: BridgeWSEvent.SYNC.value})
             continue
-        if event in ("bye", "stop"):
-            log.info("bridge.bye", reason=msg.get("reason"))
+        if event in (BridgeWSEvent.BYE, BridgeWSEvent.STOP):
+            log.info("bridge.bye", reason=msg.get(_BYE_FIELD_REASON))
             break
 
 
@@ -263,26 +318,43 @@ async def _drain_gemini(
             data = response.data
             if data:
                 recording.add_ai_pcm24k(data)
-                # Gemini emits PCM 24k mono — same wire format 46elks expects.
                 await websocket.send_json(
-                    {"t": "audio", "data": base64.b64encode(data).decode()}
+                    {
+                        _FRAME_FIELD_TYPE: BridgeWSEvent.AUDIO.value,
+                        _AUDIO_FIELD_DATA: base64.b64encode(data).decode(),
+                    }
                 )
 
             sc = response.server_content
             if sc is not None:
-                # Server-side transcripts (in/out)
                 if sc.input_transcription and (t_in := sc.input_transcription.text or ""):
                     _persist_text(db, call.id, TranscriptRole.CALLER, t_in, ts0)
+                    await _forward_transcript(websocket, TranscriptRole.CALLER, t_in)
                 if sc.output_transcription and (t_out := sc.output_transcription.text or ""):
                     _persist_text(db, call.id, TranscriptRole.AI, t_out, ts0)
+                    await _forward_transcript(websocket, TranscriptRole.AI, t_out)
                 if getattr(sc, "interrupted", False):
-                    # Stop our outbound playback at the provider so the model
-                    # can hear the caller again immediately.
-                    await websocket.send_json({"t": "interrupt"})
+                    await websocket.send_json({_FRAME_FIELD_TYPE: BridgeWSEvent.INTERRUPT.value})
 
             if response.text:
                 _persist_text(db, call.id, TranscriptRole.AI, response.text, ts0)
+                await _forward_transcript(websocket, TranscriptRole.AI, response.text)
         tracker.end_turn()
+
+
+async def _forward_transcript(websocket: WebSocket, role: TranscriptRole, text: str) -> None:
+    if not text.strip():
+        return
+    try:
+        await websocket.send_json(
+            {
+                _FRAME_FIELD_TYPE: BridgeWSEvent.TRANSCRIPT.value,
+                _TRANSCRIPT_FIELD_ROLE: role.value,
+                _TRANSCRIPT_FIELD_TEXT: text,
+            }
+        )
+    except Exception:  # noqa: BLE001
+        pass
 
 
 def _persist_text(
@@ -308,9 +380,9 @@ def _persist_text(
 
         audit_service.record(
             db,
-            actor="system",
-            action="transcript.redacted",
-            target_type="call",
+            actor=AuditActor.SYSTEM,
+            action=AuditAction.TRANSCRIPT_REDACTED,
+            target_type=AuditTargetType.CALL,
             target_id=call_id,
             payload={
                 "labels": [label for label, _ in redaction.spans],

@@ -1,5 +1,6 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
+import { Eyebrow } from "@/components/ui/eyebrow";
 import { formatPhoneSv } from "@/lib/format";
 
 interface CustomerCardProps {
@@ -12,26 +13,26 @@ interface CustomerCardProps {
 export function CustomerCard({ name, phone, email, notesSummary }: CustomerCardProps) {
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Kund</CardTitle>
-      </CardHeader>
-      <CardContent>
+      <CardContent className="px-6 py-6">
+        <Eyebrow className="mb-4">Kund</Eyebrow>
         <div className="flex items-center gap-3">
-          <Avatar name={name ?? "?"} className="h-10 w-10 text-sm" />
+          <Avatar name={name ?? "?"} size="lg" />
           <div className="min-w-0">
-            <div className="text-sm font-medium text-text-strong truncate">
+            <div className="font-display text-[18px] font-medium tracking-[-0.005em] text-text-strong truncate">
               {name ?? "Okänd ringare"}
             </div>
             {phone ? (
-              <div className="text-xs text-text-muted">{formatPhoneSv(phone)}</div>
+              <div className="text-sm text-text-muted v-tnum">
+                {formatPhoneSv(phone)}
+              </div>
             ) : null}
             {email ? (
-              <div className="text-xs text-text-muted">{email}</div>
+              <div className="text-sm text-text-muted">{email}</div>
             ) : null}
           </div>
         </div>
         {notesSummary ? (
-          <p className="mt-4 text-sm text-text-muted leading-relaxed">{notesSummary}</p>
+          <p className="mt-5 text-[15px] leading-relaxed text-text">{notesSummary}</p>
         ) : null}
       </CardContent>
     </Card>

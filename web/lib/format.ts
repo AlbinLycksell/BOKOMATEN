@@ -2,11 +2,13 @@ const SE_DATE = new Intl.DateTimeFormat("sv-SE", {
   year: "numeric",
   month: "short",
   day: "2-digit",
+  timeZone: "Europe/Stockholm",
 });
 
 const SE_TIME = new Intl.DateTimeFormat("sv-SE", {
   hour: "2-digit",
   minute: "2-digit",
+  timeZone: "Europe/Stockholm",
 });
 
 const SE_RELATIVE = new Intl.RelativeTimeFormat("sv-SE", { numeric: "auto" });

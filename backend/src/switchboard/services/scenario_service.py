@@ -24,18 +24,27 @@ from switchboard.core.logging import get_logger
 from switchboard.core.tenant import firma_context
 from switchboard.core.time import utcnow
 from switchboard.models import (
+    AuditAction,
+    AuditActor,
+    AuditTargetType,
     Call,
+    CallSource,
     CallStatus,
+    CustomerType,
     Firma,
     Intent,
     Severity,
+    SmsTemplate,
+    ToolName,
     Trade,
     TranscriptRole,
     TranscriptSegment,
+    Urgency,
 )
 from switchboard.models.enums import EmergencyIndicator
 from switchboard.services import audit_service, triage_service
-from switchboard.tools.handlers import ToolContext, dispatch as tool_dispatch
+from switchboard.tools.handlers import ToolContext
+from switchboard.tools.handlers import dispatch as tool_dispatch
 
 log = get_logger("switchboard.scenarios")
 
@@ -59,7 +68,7 @@ class ScenarioResult:
     call_id: str
     intent: Intent | None
     severity: Severity | None
-    tool_invocations: list[str]
+    tool_invocations: list[ToolName]
     summary_short: str | None
 
 
@@ -218,50 +227,50 @@ def _classify(turns: list[str], trade: Trade, *, is_winter: bool) -> tuple[Inten
 # fn(turns, scenario) -> args. Real production calls follow these
 # playbooks; the scenario runner just runs them deterministically.
 def _build_args_for_tool(
-    tool: str, preset: ScenarioPreset, intent: Intent, severity: Severity | None
+    tool: ToolName, preset: ScenarioPreset, intent: Intent, severity: Severity | None
 ) -> dict[str, object]:
     last_caller = preset.caller_turns[-1] if preset.caller_turns else ""
     full_text = " ".join(preset.caller_turns)
-    if tool == "lookup_customer":
+    if tool is ToolName.LOOKUP_CUSTOMER:
         return {"phone_number": preset.caller_phone}
-    if tool == "triage_emergency":
+    if tool is ToolName.TRIAGE_EMERGENCY:
         return {
             "problem_description": full_text,
             "trade": preset.trade.value,
             "indicators_present": [i.value for i in _detect_indicators(full_text)],
         }
-    if tool == "escalate_to_owner":
+    if tool is ToolName.ESCALATE_TO_OWNER:
         return {
             "severity": (severity or Severity.HIGH).value,
             "reason_sv": full_text[:120],
             "customer_phone": preset.caller_phone,
         }
-    if tool == "send_sms_followup":
-        if intent == Intent.AKUT:
+    if tool is ToolName.SEND_SMS_FOLLOWUP:
+        if intent is Intent.AKUT:
             return {
                 "to_phone": preset.caller_phone,
-                "template": "emergency_ack",
+                "template": SmsTemplate.EMERGENCY_ACK.value,
                 "context_data": {"name": "kund", "owner_name": "Magnus", "window": "15 min"},
             }
         return {
             "to_phone": preset.caller_phone,
-            "template": "booking_confirmation",
+            "template": SmsTemplate.BOOKING_CONFIRMATION.value,
             "context_data": {"name": "kund", "time": "den 22:a maj 08:00", "address": last_caller},
         }
-    if tool == "create_lead":
+    if tool is ToolName.CREATE_LEAD:
         return {
             "name": "Ny lead",
             "phone": preset.caller_phone,
-            "type": "private",
+            "type": CustomerType.PRIVATE.value,
             "problem_summary_sv": full_text[:200],
         }
-    if tool == "request_photo_upload":
+    if tool is ToolName.REQUEST_PHOTO_UPLOAD:
         return {
             "to_phone": preset.caller_phone,
             "lead_or_customer_id": "pending",
             "expires_hours": 168,
         }
-    if tool == "check_availability":
+    if tool is ToolName.CHECK_AVAILABILITY:
         return {
             "duration_minutes": 60,
             "earliest_date": utcnow().date().isoformat(),
@@ -269,7 +278,7 @@ def _build_args_for_tool(
             "required_skills": [],
             "address": last_caller,
         }
-    if tool == "book_appointment":
+    if tool is ToolName.BOOK_APPOINTMENT:
         return {
             "customer_id": "pending",
             "start_iso": utcnow().isoformat(),
@@ -278,23 +287,41 @@ def _build_args_for_tool(
             "problem_summary_sv": full_text[:200],
             "rot_eligible": False,
         }
-    if tool == "lookup_job_status":
+    if tool is ToolName.LOOKUP_JOB_STATUS:
         return {"customer_id": "pending", "job_query_sv": last_caller}
-    if tool == "take_message":
+    if tool is ToolName.TAKE_MESSAGE:
         return {
             "caller_phone": preset.caller_phone,
             "topic_sv": full_text[:200],
-            "urgency": "low",
+            "urgency": Urgency.LOW.value,
         }
     return {}
 
 
-_PLAYBOOK: dict[Intent, list[str]] = {
-    Intent.AKUT: ["lookup_customer", "triage_emergency", "escalate_to_owner", "send_sms_followup"],
-    Intent.BOKNING: ["lookup_customer", "check_availability", "book_appointment", "send_sms_followup"],
-    Intent.OFFERT: ["lookup_customer", "create_lead", "request_photo_upload"],
-    Intent.BEFINTLIG_KUND: ["lookup_customer", "lookup_job_status", "take_message"],
-    Intent.OVRIGT: ["take_message"],
+_PLAYBOOK: dict[Intent, list[ToolName]] = {
+    Intent.AKUT: [
+        ToolName.LOOKUP_CUSTOMER,
+        ToolName.TRIAGE_EMERGENCY,
+        ToolName.ESCALATE_TO_OWNER,
+        ToolName.SEND_SMS_FOLLOWUP,
+    ],
+    Intent.BOKNING: [
+        ToolName.LOOKUP_CUSTOMER,
+        ToolName.CHECK_AVAILABILITY,
+        ToolName.BOOK_APPOINTMENT,
+        ToolName.SEND_SMS_FOLLOWUP,
+    ],
+    Intent.OFFERT: [
+        ToolName.LOOKUP_CUSTOMER,
+        ToolName.CREATE_LEAD,
+        ToolName.REQUEST_PHOTO_UPLOAD,
+    ],
+    Intent.BEFINTLIG_KUND: [
+        ToolName.LOOKUP_CUSTOMER,
+        ToolName.LOOKUP_JOB_STATUS,
+        ToolName.TAKE_MESSAGE,
+    ],
+    Intent.OVRIGT: [ToolName.TAKE_MESSAGE],
 }
 
 
@@ -335,16 +362,17 @@ def run_scenario(
             firma_id=firma_id,
             caller_phone=preset.caller_phone,
             status=CallStatus.IN_PROGRESS,
+            source=CallSource.SCENARIO,
             intent=intent,
             severity=severity,
-            gemini_session_id=f"scenario:{preset.id}",
+            gemini_session_id=f"{CallSource.SCENARIO.value}:{preset.id}",
         )
         session.add(call)
         session.commit()
         session.refresh(call)
 
         ctx = ToolContext(session=session, firma_id=firma_id, call_id=call.id)
-        tool_names: list[str] = []
+        tool_names: list[ToolName] = []
 
         ai_turns_iter = iter(preset.ai_turns)
         for i, caller_text in enumerate(preset.caller_turns):
@@ -371,10 +399,10 @@ def run_scenario(
         for tool in _PLAYBOOK[intent]:
             args = _build_args_for_tool(tool, preset, intent, severity)
             try:
-                tool_dispatch(ctx, tool, args)
+                tool_dispatch(ctx, tool.value, args)
                 tool_names.append(tool)
             except Exception:  # noqa: BLE001
-                log.exception("scenario.tool_failed", tool=tool, preset=preset.id)
+                log.exception("scenario.tool_failed", tool=tool.value, preset=preset.id)
 
         call.ended_at = utcnow()
         call.status = CallStatus.HANDLED
@@ -389,15 +417,15 @@ def run_scenario(
 
         audit_service.record(
             session,
-            actor="admin",
-            action="scenario.run",
-            target_type="call",
+            actor=AuditActor.ADMIN,
+            action=AuditAction.SCENARIO_RUN,
+            target_type=AuditTargetType.CALL,
             target_id=call.id,
             payload={
                 "preset_id": preset.id,
                 "intent": intent.value,
                 "severity": severity.value if severity else None,
-                "tools": tool_names,
+                "tools": [t.value for t in tool_names],
             },
         )
 

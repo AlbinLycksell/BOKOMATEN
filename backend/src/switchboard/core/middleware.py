@@ -22,12 +22,13 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from switchboard.core.auth import AuthError, verify_jwt
 from switchboard.core.config import Settings, get_settings
+from switchboard.core.constants import BEARER_PREFIX, HttpHeader
 from switchboard.core.logging import get_logger
 from switchboard.core.tenant import firma_context
+from switchboard.models import AuthMode
 
 log = get_logger("switchboard.middleware")
 
-DEV_FIRMA_HEADER = "X-Firma-Id"
 SKIP_PATH_PREFIXES = ("/health", "/api/auth", "/ws/")
 
 
@@ -57,15 +58,15 @@ class TenantMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
     def _resolve_firma_id(self, request: Request) -> str | None:
-        if self.settings.auth_mode == "jwks":
-            auth = request.headers.get("Authorization", "")
-            if not auth.startswith("Bearer "):
+        if self.settings.auth_mode is AuthMode.JWKS:
+            auth = request.headers.get(HttpHeader.AUTHORIZATION, "")
+            if not auth.startswith(BEARER_PREFIX):
                 return None
-            token = auth.removeprefix("Bearer ").strip()
+            token = auth.removeprefix(BEARER_PREFIX).strip()
             try:
                 ctx = verify_jwt(token, self.settings)
                 return ctx.firma_id
             except AuthError as exc:
                 log.warning("auth.rejected", reason=str(exc))
                 return None
-        return request.headers.get(DEV_FIRMA_HEADER) or self.default_firma_id
+        return request.headers.get(HttpHeader.FIRMA_ID) or self.default_firma_id

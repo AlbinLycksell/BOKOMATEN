@@ -8,7 +8,7 @@ from sqlmodel import Session
 
 from switchboard.core.logging import get_logger
 from switchboard.core.tenant import require_firma_id
-from switchboard.models import AuditLog
+from switchboard.models import AuditAction, AuditActor, AuditLog, AuditTargetType
 
 log = get_logger("switchboard.audit")
 
@@ -16,9 +16,9 @@ log = get_logger("switchboard.audit")
 def record(
     session: Session,
     *,
-    actor: str,
-    action: str,
-    target_type: str | None = None,
+    actor: AuditActor | str,
+    action: AuditAction | str,
+    target_type: AuditTargetType | str | None = None,
     target_id: str | None = None,
     payload: dict[str, Any] | None = None,
     firma_id: str | None = None,
@@ -26,9 +26,9 @@ def record(
     fid = firma_id or require_firma_id()
     row = AuditLog(
         firma_id=fid,
-        actor=actor,
-        action=action,
-        target_type=target_type,
+        actor=str(actor),
+        action=str(action),
+        target_type=str(target_type) if target_type is not None else None,
         target_id=target_id,
         payload=payload or {},
     )
@@ -37,9 +37,9 @@ def record(
     session.refresh(row)
     log.info(
         "audit.recorded",
-        action=action,
-        actor=actor,
-        target_type=target_type,
+        action=str(action),
+        actor=str(actor),
+        target_type=str(target_type) if target_type is not None else None,
         target_id=target_id,
     )
     return row

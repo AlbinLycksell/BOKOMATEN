@@ -10,6 +10,7 @@ from switchboard.models import (
     Call,
     CallDetailRead,
     CallRead,
+    CallSource,
     CallStatus,
     CallSummary,
     Customer,
@@ -47,6 +48,7 @@ def _to_read(call: Call, customer_name: str | None) -> CallRead:
         intent=call.intent,
         severity=call.severity,
         status=call.status,
+        source=call.source,
         summary_short=summary_short,
         cost_total_sek=call.cost_total_sek or 0.0,
     )
@@ -59,6 +61,7 @@ def list_calls(
     intent: Intent | None = None,
     severity: Severity | None = None,
     status_filter: Annotated[CallStatus | None, Query(alias="status")] = None,
+    source: CallSource | None = None,
     limit: int = Query(default=100, ge=1, le=500),
     offset: int = Query(default=0, ge=0),
 ) -> list[CallRead]:
@@ -69,6 +72,8 @@ def list_calls(
         stmt = stmt.where(Call.severity == severity)
     if status_filter is not None:
         stmt = stmt.where(Call.status == status_filter)
+    if source is not None:
+        stmt = stmt.where(Call.source == source)
     stmt = stmt.order_by(Call.started_at.desc()).offset(offset).limit(limit)  # type: ignore[attr-defined]
     calls = db.exec(stmt).all()
     out: list[CallRead] = []

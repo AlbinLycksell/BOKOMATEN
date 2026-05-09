@@ -6,6 +6,7 @@ from datetime import timedelta
 
 from sqlmodel import Session, select
 
+from switchboard.core.constants import DEFAULT_GEMINI_VOICE, DEMO_FIRMA_ID
 from switchboard.core.logging import get_logger
 from switchboard.core.time import utcnow
 from switchboard.db.session import get_engine
@@ -18,18 +19,21 @@ from switchboard.models import (
     FirmaSettings,
     Intent,
     PhoneNumber,
+    PhoneNumberProvider,
+    PhoneNumberStatus,
     Plan,
     Severity,
     ToolInvocation,
+    ToolName,
     Trade,
     TranscriptRole,
     TranscriptSegment,
     User,
+    UserRole,
 )
+from switchboard.models.enums import EmergencyIndicator
 
 log = get_logger("switchboard.seed")
-
-DEMO_FIRMA_ID = "01J0000FIRM0ANDERSSONSVVS00"
 
 
 def seed_dev_data() -> None:
@@ -52,18 +56,18 @@ def seed_dev_data() -> None:
                     "Hej, du har kommit till Anderssons VVS, "
                     "jag är deras digitala assistent. Hur kan jag hjälpa dig?"
                 ),
-                voice="Aoede",
+                voice=DEFAULT_GEMINI_VOICE,
             ).model_dump(),
         )
         s.add(firma)
 
         s.add_all(
             [
-                User(firma_id=DEMO_FIRMA_ID, role="owner", name="Magnus Andersson",
+                User(firma_id=DEMO_FIRMA_ID, role=UserRole.OWNER.value, name="Magnus Andersson",
                      phone="+46708111222", email="magnus@anderssonsvvs.se", on_call=True),
-                User(firma_id=DEMO_FIRMA_ID, role="back_office", name="Lena Andersson",
+                User(firma_id=DEMO_FIRMA_ID, role=UserRole.BACK_OFFICE.value, name="Lena Andersson",
                      phone="+46708111223", email="lena@anderssonsvvs.se"),
-                User(firma_id=DEMO_FIRMA_ID, role="technician", name="Alex Berg",
+                User(firma_id=DEMO_FIRMA_ID, role=UserRole.TECHNICIAN.value, name="Alex Berg",
                      phone="+46708111224", email="alex@anderssonsvvs.se", on_call=False),
             ]
         )
@@ -71,8 +75,8 @@ def seed_dev_data() -> None:
             PhoneNumber(
                 firma_id=DEMO_FIRMA_ID,
                 e164="+46812345678",
-                provider="46elks",
-                status="active",
+                provider=PhoneNumberProvider.ELKS.value,
+                status=PhoneNumberStatus.ACTIVE.value,
             )
         )
 
@@ -152,18 +156,22 @@ def seed_dev_data() -> None:
         )
         s.add_all(
             [
-                ToolInvocation(firma_id=DEMO_FIRMA_ID, call_id=akut.id, name="lookup_customer",
+                ToolInvocation(firma_id=DEMO_FIRMA_ID, call_id=akut.id, name=ToolName.LOOKUP_CUSTOMER.value,
                                args={"phone_number": inger.phone},
                                result={"found": True, "customer_id": inger.id, "name": inger.name},
                                latency_ms=42),
-                ToolInvocation(firma_id=DEMO_FIRMA_ID, call_id=akut.id, name="triage_emergency",
+                ToolInvocation(firma_id=DEMO_FIRMA_ID, call_id=akut.id, name=ToolName.TRIAGE_EMERGENCY.value,
                                args={"problem_description": "vattenläcka, rinner",
-                                     "trade": "vvs", "indicators_present": ["lacka", "rinner"]},
-                               result={"is_emergency": True, "severity": "high",
+                                     "trade": Trade.VVS.value,
+                                     "indicators_present": [
+                                         EmergencyIndicator.LACKA.value,
+                                         EmergencyIndicator.RINNER.value,
+                                     ]},
+                               result={"is_emergency": True, "severity": Severity.HIGH.value,
                                        "recommended_action": "escalate_now"},
                                latency_ms=12),
-                ToolInvocation(firma_id=DEMO_FIRMA_ID, call_id=akut.id, name="escalate_to_owner",
-                               args={"severity": "high", "reason": "vattenläcka",
+                ToolInvocation(firma_id=DEMO_FIRMA_ID, call_id=akut.id, name=ToolName.ESCALATE_TO_OWNER.value,
+                               args={"severity": Severity.HIGH.value, "reason": "vattenläcka",
                                      "customer_phone": inger.phone},
                                result={"escalation_id": "01J", "contacted": ["+46708111222"]},
                                latency_ms=180),

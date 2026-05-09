@@ -1,6 +1,8 @@
-# GCP setup — first-time bootstrap
+# GCP setup — first-time bootstrap (production)
 
-One-time steps to bring up the production environment in `europe-west4`. Run by Founders + the lead engineer together; takes ~2 hours of pair work.
+One-time steps to bring up the **production** environment in `europe-west4`. Run by Founders + the lead engineer together; takes ~2 hours of pair work.
+
+> **Looking for dev setup?** This doc is prod-only. For a developer GCP environment (15 min, no Terraform), see [`gcp-setup-dev.md`](./gcp-setup-dev.md).
 
 ## 0. Prerequisites
 

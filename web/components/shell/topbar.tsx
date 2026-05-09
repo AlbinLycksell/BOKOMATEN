@@ -1,5 +1,3 @@
-import { Avatar } from "@/components/ui/avatar";
-
 interface TopbarProps {
   title: string;
   description?: string;
@@ -8,18 +6,19 @@ interface TopbarProps {
 
 export function Topbar({ title, description, actions }: TopbarProps) {
   return (
-    <header className="border-b border-border bg-surface">
-      <div className="flex items-center justify-between gap-4 px-6 py-5">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-lg font-semibold tracking-tight text-text-strong">{title}</h1>
+    <header className="bg-linne border-b border-border">
+      <div className="flex items-end justify-between gap-6 px-8 lg:px-12 py-8">
+        <div className="flex flex-col gap-2 min-w-0">
+          <h1 className="font-display text-[32px] leading-[1.05] tracking-[-0.015em] font-semibold text-text-strong">
+            {title}
+          </h1>
           {description ? (
-            <p className="text-sm text-text-muted">{description}</p>
+            <p className="text-[15px] text-text-muted">{description}</p>
           ) : null}
         </div>
-        <div className="flex items-center gap-3">
-          {actions}
-          <Avatar name="Magnus Andersson" />
-        </div>
+        {actions ? (
+          <div className="flex items-center gap-2 shrink-0">{actions}</div>
+        ) : null}
       </div>
     </header>
   );

@@ -7,17 +7,18 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { adminApi, type ScenarioPreset, type ScenarioRunResult } from "@/lib/admin-api";
+import { Intent } from "@/lib/constants/enums";
 
 interface Props {
   presets: ScenarioPreset[];
 }
 
 const INTENT_VARIANT: Record<string, "critical" | "info" | "accent" | "neutral" | "success"> = {
-  akut: "critical",
-  offertforfragan: "info",
-  bokning: "accent",
-  befintlig_kund_fraga: "neutral",
-  ovrigt: "neutral",
+  [Intent.AKUT]: "critical",
+  [Intent.OFFERT]: "info",
+  [Intent.BOKNING]: "accent",
+  [Intent.BEFINTLIG_KUND]: "neutral",
+  [Intent.OVRIGT]: "neutral",
 };
 
 export function ScenarioRunner({ presets }: Props) {
@@ -103,12 +104,11 @@ export function ScenarioRunner({ presets }: Props) {
                       ))}
                     </div>
                   ) : null}
-                  <div className="mt-2">
-                    <Link
-                      href={`/calls/${encodeURIComponent(result.r.call_id)}`}
-                      className="text-accent hover:underline"
-                    >
-                      Öppna samtalet i inkorgen →
+                  <div className="mt-3">
+                    <Link href={`/calls/${encodeURIComponent(result.r.call_id)}`}>
+                      <Button size="sm" variant="outline">
+                        Öppna samtalet →
+                      </Button>
                     </Link>
                   </div>
                 </div>

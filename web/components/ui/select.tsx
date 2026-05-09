@@ -10,8 +10,9 @@ export const Select = forwardRef<
     ref={ref}
     suppressHydrationWarning
     className={cn(
-      "h-10 w-full rounded-md border border-border bg-surface px-3 text-sm text-text",
-      "focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent",
+      "h-12 w-full rounded-[10px] border border-border-strong bg-white px-4 text-base text-text",
+      "focus:outline-none focus:border-havsbla",
+      "disabled:opacity-50",
       className,
     )}
     {...props}

@@ -1,16 +1,15 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Eyebrow } from "@/components/ui/eyebrow";
 import type { CallSummary } from "@/lib/api-models";
 
 export function SummaryCard({ summary }: { summary: CallSummary | null }) {
   if (!summary) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle>Sammanfattning</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-text-muted">
+        <CardContent className="px-6 py-6">
+          <Eyebrow className="mb-3">Sammanfattning</Eyebrow>
+          <p className="text-[15px] text-text-muted">
             AI-sammanfattningen genereras strax efter att samtalet avslutats.
           </p>
         </CardContent>
@@ -19,24 +18,24 @@ export function SummaryCard({ summary }: { summary: CallSummary | null }) {
   }
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle>Sammanfattning</CardTitle>
+      <CardContent className="px-6 py-6 flex flex-col gap-5">
+        <div className="flex items-center justify-between gap-3">
+          <Eyebrow>Sammanfattning</Eyebrow>
           {summary.owner_action_required ? (
             <Badge variant="warning">Åtgärd krävs</Badge>
           ) : (
-            <Badge variant="success">Hanterad</Badge>
+            <Badge variant="bokad">Hanterad</Badge>
           )}
         </div>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        <p className="text-base font-medium text-text-strong leading-relaxed">
+        <p className="font-display text-[20px] leading-[1.35] tracking-[-0.005em] font-medium text-text-strong">
           {summary.short_sv}
         </p>
-        <p className="text-sm text-text leading-relaxed">{summary.long_sv}</p>
-        <div className="rounded-md border border-border bg-surface-2 px-4 py-3">
-          <p className="text-xs uppercase tracking-wide text-text-muted">Nästa åtgärd</p>
-          <p className="mt-1 text-sm text-text-strong">{summary.next_action_sv}</p>
+        <p className="text-[15px] leading-[1.6] text-text">{summary.long_sv}</p>
+        <div className="rounded-[10px] bg-linne-deep px-4 py-3">
+          <Eyebrow className="mb-1">Nästa åtgärd</Eyebrow>
+          <p className="text-[15px] text-text-strong font-medium">
+            {summary.next_action_sv}
+          </p>
         </div>
       </CardContent>
     </Card>

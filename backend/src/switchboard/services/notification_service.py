@@ -8,35 +8,33 @@ based on whether `SWITCHBOARD_ELKS_API_USERNAME` is set.
 from __future__ import annotations
 
 from switchboard.core.config import get_settings
+from switchboard.core.constants import SMS_DELIVERY_OK_STATUSES
 from switchboard.core.ids import new_id
 from switchboard.core.logging import get_logger
 from switchboard.integrations.elks_sms import ElksSMSClient
-from switchboard.tools.schemas import (
-    RequestPhotoUploadResult,
-    SendSmsFollowupResult,
-    SmsTemplate,
-)
+from switchboard.models import SmsTemplate
+from switchboard.tools.schemas import RequestPhotoUploadResult, SendSmsFollowupResult
 
 log = get_logger("switchboard.notify")
 
 
 _TEMPLATES: dict[SmsTemplate, str] = {
-    "booking_confirmation": (
+    SmsTemplate.BOOKING_CONFIRMATION: (
         "Hej {name}! Du är bokad {time} på {address}. "
         "Vi hör av oss om något ändras. /Switchboard"
     ),
-    "emergency_ack": (
+    SmsTemplate.EMERGENCY_ACK: (
         "Tack {name}, vi har fått ditt ärende och {owner_name} ringer dig "
         "inom {window}. /Switchboard"
     ),
-    "photo_upload_link": (
+    SmsTemplate.PHOTO_UPLOAD_LINK: (
         "Hej! Skicka gärna bild på problemet via denna länk "
         "(giltig 7 dagar): {url} /Switchboard"
     ),
-    "callback_promise": (
+    SmsTemplate.CALLBACK_PROMISE: (
         "Tack för samtalet, {name}. Vi ringer upp inom {window}. /Switchboard"
     ),
-    "secure_form_link": (
+    SmsTemplate.SECURE_FORM_LINK: (
         "För känslig info, fyll i säkert formulär här "
         "(giltigt 1 timme): {url} /Switchboard"
     ),
@@ -96,7 +94,7 @@ def send_sms(
     try:
         result = client.send(to=to_phone, message=body, sender_id=resolved_sender)
         return SendSmsFollowupResult(
-            sent=bool(result.get("status") in (None, "delivered", "queued", "created")),
+            sent=bool(result.get("status") in SMS_DELIVERY_OK_STATUSES),
             sms_id=str(result.get("id", new_id())),
         )
     finally:

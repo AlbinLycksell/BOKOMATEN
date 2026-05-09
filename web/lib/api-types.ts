@@ -714,6 +714,8 @@ export interface components {
             intent: components["schemas"]["Intent"] | null;
             severity: components["schemas"]["Severity"] | null;
             status: components["schemas"]["CallStatus"];
+            /** Source */
+            source: string;
             /** Summary Short */
             summary_short: string | null;
             /**
@@ -751,6 +753,8 @@ export interface components {
             intent: components["schemas"]["Intent"] | null;
             severity: components["schemas"]["Severity"] | null;
             status: components["schemas"]["CallStatus"];
+            /** Source */
+            source: string;
             /** Summary Short */
             summary_short: string | null;
             /**

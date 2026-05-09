@@ -1,11 +1,19 @@
 import { cn } from "@/lib/utils";
 import type { TranscriptSegmentRead } from "@/lib/api-models";
+import { TranscriptRole } from "@/lib/constants/enums";
 
 const ROLE_LABEL: Record<TranscriptSegmentRead["role"], string> = {
-  caller: "Kund",
-  ai: "Switchboard",
-  system: "System",
+  [TranscriptRole.CALLER]: "Kund",
+  [TranscriptRole.AI]: "AI",
+  [TranscriptRole.SYSTEM]: "System",
 };
+
+function formatOffset(ms: number): string {
+  const total = Math.floor(ms / 1000);
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
 
 export function Transcript({ segments }: { segments: TranscriptSegmentRead[] }) {
   if (segments.length === 0) {
@@ -14,26 +22,28 @@ export function Transcript({ segments }: { segments: TranscriptSegmentRead[] }) 
     );
   }
   return (
-    <ol className="flex flex-col gap-3">
+    <div className="grid gap-2 text-[14px] leading-[1.5]">
       {segments.map((seg, i) => (
-        <li key={i} className="flex gap-3">
+        <div
+          key={i}
+          className="grid grid-cols-[44px_56px_1fr] gap-2.5 items-baseline"
+        >
+          <span className="font-mono text-[12px] text-text-muted v-tnum">
+            {formatOffset(seg.ts_ms_offset)}
+          </span>
           <span
             className={cn(
-              "mt-1 inline-block h-1.5 w-1.5 shrink-0 rounded-full",
-              seg.role === "ai" ? "bg-accent" : "bg-text-muted",
+              "font-mono text-[12px] font-medium uppercase tracking-[0.04em]",
+              seg.role === TranscriptRole.AI
+                ? "text-signaloranje"
+                : "text-text-strong",
             )}
-          />
-          <div className="min-w-0 flex-1">
-            <div className="flex items-baseline gap-2 text-xs text-text-faint">
-              <span className="font-medium text-text-muted uppercase tracking-wide">
-                {ROLE_LABEL[seg.role]}
-              </span>
-              <span>{Math.floor(seg.ts_ms_offset / 1000)}s</span>
-            </div>
-            <p className="text-sm text-text leading-relaxed mt-0.5">{seg.text}</p>
-          </div>
-        </li>
+          >
+            {ROLE_LABEL[seg.role]}
+          </span>
+          <span className="text-text">{seg.text}</span>
+        </div>
       ))}
-    </ol>
+    </div>
   );
 }

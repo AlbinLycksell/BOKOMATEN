@@ -94,9 +94,25 @@ def summarize_call(call_id: str) -> CallSummary | None:
         if call.intent is None:
             call.intent = _infer_intent(transcript)
         call.ended_at = call.ended_at or utcnow()
+
+        # Auto-promote status based on the summary's verdict so the inbox
+        # filters (`Att följa upp` / `Hanterade`) light up correctly for
+        # both real calls and admin voice tests.
+        from switchboard.models import CallStatus
+
+        if summary.owner_action_required:
+            call.status = CallStatus.NEEDS_FOLLOWUP
+        elif call.status == CallStatus.COMPLETED:
+            call.status = CallStatus.HANDLED
+
         s.add(call)
         s.commit()
-        log.info("post_call.summarized", call_id=call_id, intent=call.intent)
+        log.info(
+            "post_call.summarized",
+            call_id=call_id,
+            intent=call.intent,
+            status=call.status.value,
+        )
         return summary
 
 

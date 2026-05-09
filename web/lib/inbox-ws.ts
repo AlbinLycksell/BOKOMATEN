@@ -4,14 +4,15 @@ import { useEffect, useRef } from "react";
 
 import type { CallRead } from "./api-models";
 import { inboxWsUrl } from "./backend-url";
+import { InboxEvent } from "./constants/ws";
 
-type InboxEvent =
-  | { event: "inbox.call.created"; payload: { id: string; started_at: string } }
-  | { event: "inbox.call.updated"; payload: Partial<CallRead> & { id: string } };
+type InboxMessage =
+  | { event: typeof InboxEvent.CALL_CREATED; payload: { id: string; started_at: string } }
+  | { event: typeof InboxEvent.CALL_UPDATED; payload: Partial<CallRead> & { id: string } };
 
 interface UseInboxWebSocketOpts {
   firmaId: string;
-  onEvent: (msg: InboxEvent) => void;
+  onEvent: (msg: InboxMessage) => void;
 }
 
 export function useInboxWebSocket({ firmaId, onEvent }: UseInboxWebSocketOpts) {
@@ -35,7 +36,7 @@ export function useInboxWebSocket({ firmaId, onEvent }: UseInboxWebSocketOpts) {
       };
       ws.onmessage = (e) => {
         try {
-          const msg = JSON.parse(e.data) as InboxEvent;
+          const msg = JSON.parse(e.data) as InboxMessage;
           onEventRef.current(msg);
         } catch {
           /* ignore malformed */

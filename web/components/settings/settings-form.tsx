@@ -12,13 +12,19 @@ import { Select } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { useFirmaQuery } from "@/lib/queries";
+import { ProxyApiPath } from "@/lib/constants/api-paths";
+import { IntegrationType } from "@/lib/constants/enums";
+import { DEMO_FIRMA_ID } from "@/lib/constants/firma";
+import { ContentType, HttpHeader } from "@/lib/constants/headers";
+import { QueryKey } from "@/lib/constants/query-keys";
+import { GEMINI_VOICES } from "@/lib/constants/voices";
+
+const GOOGLE_CALENDAR_URL_SLUG = "google-calendar";
 
 const FIRMA_HEADER: Record<string, string> = {
-  "X-Firma-Id": "01J0000FIRM0ANDERSSONSVVS00",
-  "Content-Type": "application/json",
+  [HttpHeader.FIRMA_ID]: DEMO_FIRMA_ID,
+  [HttpHeader.CONTENT_TYPE]: ContentType.JSON,
 };
-
-const VOICES = ["Aoede", "Charon", "Leda", "Zephyr", "Kore", "Puck"];
 
 interface FirmaSettingsForm {
   greeting_text: string;
@@ -40,35 +46,43 @@ interface IntegrationStatus {
 }
 
 const INTEGRATION_LABELS: Record<string, { label: string; description: string }> = {
-  fortnox: {
+  [IntegrationType.FORTNOX]: {
     label: "Fortnox",
     description: "Kundregister, fakturor, kalender — synkas dygnet runt.",
   },
-  hantverksdata: {
+  [IntegrationType.HANTVERKSDATA]: {
     label: "Hantverksdata Next",
     description: "Projektsystem, arbetsorder, resursplanering. Kräver partneravtal.",
   },
-  visma: {
+  [IntegrationType.VISMA]: {
     label: "Visma eEkonomi",
     description: "Bokföring och kalender för Visma-användare.",
   },
-  google_calendar: {
+  [IntegrationType.GOOGLE_CALENDAR]: {
     label: "Google Calendar",
     description: "Bidirektionell kalendersynk.",
   },
-  outlook: {
+  [IntegrationType.OUTLOOK]: {
     label: "Outlook 365",
     description: "Kommer i Phase 2.",
   },
 };
 
+const INTEGRATION_URL_SLUG: Record<string, string> = {
+  [IntegrationType.GOOGLE_CALENDAR]: GOOGLE_CALENDAR_URL_SLUG,
+};
+
+function integrationConnectUrl(type: string): string {
+  return ProxyApiPath.INTEGRATION_CONNECT(INTEGRATION_URL_SLUG[type] ?? type);
+}
+
 export function SettingsForm() {
   const qc = useQueryClient();
   const firmaQ = useFirmaQuery();
   const integrationsQ = useQuery<IntegrationStatus[]>({
-    queryKey: ["integrations-status"],
+    queryKey: QueryKey.integrationsStatus(),
     queryFn: async () => {
-      const r = await fetch("/api/proxy/integrations/status", {
+      const r = await fetch(ProxyApiPath.INTEGRATIONS_STATUS, {
         headers: FIRMA_HEADER,
       });
       if (!r.ok) return [];
@@ -111,7 +125,7 @@ export function SettingsForm() {
         sms_sender_id: payload.sms_sender_id || null,
         brand_color_accent: payload.brand_color_accent || null,
       };
-      const r = await fetch("/api/proxy/firma/me/settings", {
+      const r = await fetch(ProxyApiPath.FIRMA_ME_SETTINGS, {
         method: "PUT",
         headers: FIRMA_HEADER,
         body: JSON.stringify(body),
@@ -120,7 +134,7 @@ export function SettingsForm() {
       return r.json();
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["firma"] });
+      qc.invalidateQueries({ queryKey: QueryKey.firma() });
     },
   });
 
@@ -176,7 +190,7 @@ export function SettingsForm() {
               value={form.voice}
               onChange={(e) => update("voice", e.target.value)}
             >
-              {VOICES.map((v) => (
+              {GEMINI_VOICES.map((v) => (
                 <option key={v} value={v}>
                   {v}
                 </option>
@@ -364,8 +378,8 @@ export function SettingsForm() {
                     <p className="mt-1 text-sm text-text-muted">{meta.description}</p>
                   </div>
                   <a
-                    href={`/api/proxy/integrations/${it.type === "google_calendar" ? "google-calendar" : it.type}/connect`}
-                    className="text-sm text-accent hover:underline"
+                    href={integrationConnectUrl(it.type)}
+                    className="text-sm text-havsbla font-medium hover:underline"
                   >
                     {it.connected ? "Hantera" : "Anslut"}
                   </a>
@@ -381,7 +395,7 @@ export function SettingsForm() {
         {save.isError ? (
           <span className="text-sm text-critical">Kunde inte spara.</span>
         ) : save.isSuccess ? (
-          <span className="text-sm text-success">Sparat ✓</span>
+          <span className="text-sm text-tallgron">Sparat</span>
         ) : null}
         <Button onClick={() => save.mutate(form)} disabled={save.isPending}>
           {save.isPending ? "Sparar…" : "Spara ändringar"}

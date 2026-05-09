@@ -15,7 +15,9 @@ import {
   Play,
   Search,
   Settings2,
+  Star,
   Users,
+  X,
 } from "lucide-react";
 
 export const InboxIcon = Inbox;
@@ -35,3 +37,5 @@ export const HandledIcon = CheckCircle2;
 export const PlayIcon = Play;
 export const PauseIcon = Pause;
 export const FilterIcon = Settings2;
+export const StarIcon = Star;
+export const CloseIcon = X;
