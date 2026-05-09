@@ -1,13 +1,22 @@
-"""Telephony-provider-agnostic Realtime Bridge WebSocket.
+"""Telephony Realtime Bridge WebSocket — speaks 46elks Voice Streaming natively.
 
-Frame protocol (lowest common denominator across 46elks + Twilio):
-  client → server: {"event":"start","payload":{"caller_phone":"+46…"}}
-                   {"event":"media","payload":{"audio_b64":"..."}}      (μ-law 8kHz)
-                   {"event":"stop"}
-  server → client: {"event":"media","payload":{"audio_b64":"..."}}      (μ-law 8kHz)
-                   {"event":"summary_ready","payload":{"call_id":"..."}}
+Per the official 46elks protocol (https://46elks.fi/tutorials/real-time-two-way-voice-calls-with-websocket):
 
-Provider adapters wrap their own framing into this shape upstream.
+  client → server (46elks):
+    {"t":"hello","callid":"...","from":"+46...","to":"+46..."}     once at start
+    {"t":"audio","data":"<base64 PCM 24kHz mono int16>"}           streamed
+    {"t":"sync"}                                                   periodic keep-alive
+    {"t":"bye","reason":"hangup"|"done"|"error"}                   call ends
+
+  server → client (us):
+    {"t":"sending","format":"pcm_24000"}                            initial declarations
+    {"t":"listening","format":"pcm_24000"}
+    {"t":"audio","data":"<base64 PCM 24kHz mono int16>"}           streamed
+    {"t":"interrupt"}                                              barge-in stop
+    {"t":"bye"}                                                    we hang up
+
+Other providers wrap their framing into the same shape (Twilio adapter
+deferred — its μ-law path is in `audio.py`).
 """
 
 from __future__ import annotations
@@ -17,11 +26,10 @@ import base64
 import contextlib
 from typing import Any
 
+import structlog
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from google.genai import types as gtypes
 from sqlmodel import Session
-
-import structlog
 
 from svarsa.bridge import audio as audio_codec
 from svarsa.bridge.gemini_session import connect as connect_gemini
@@ -47,7 +55,7 @@ async def bridge(websocket: WebSocket, firma_id: str, call_id: str) -> None:
         log.info("bridge.connected")
         firma = db.get(Firma, firma_id)
         if firma is None:
-            await websocket.send_json({"event": "error", "payload": {"reason": "unknown_firma"}})
+            await websocket.send_json({"t": "bye", "reason": "unknown_firma"})
             await websocket.close(code=1008)
             return
 
@@ -55,6 +63,10 @@ async def bridge(websocket: WebSocket, firma_id: str, call_id: str) -> None:
         db.add(call)
         db.commit()
         db.refresh(call)
+
+        # Declare bidirectional PCM 24kHz immediately.
+        await websocket.send_json({"t": "sending", "format": "pcm_24000"})
+        await websocket.send_json({"t": "listening", "format": "pcm_24000"})
 
         tracker = UsageTracker(call_id=call.id)
         tool_client = make_tool_client(db)
@@ -92,7 +104,7 @@ async def bridge(websocket: WebSocket, firma_id: str, call_id: str) -> None:
 
             db.add(call)
             db.commit()
-            if isinstance(tool_client, object) and hasattr(tool_client, "aclose"):
+            if hasattr(tool_client, "aclose"):
                 await tool_client.aclose()  # type: ignore[no-untyped-call]
             from svarsa.agents.runner import schedule_post_call_summary
 
@@ -110,27 +122,31 @@ async def _drain_provider(
 ) -> None:
     while True:
         msg = await websocket.receive_json()
-        event = msg.get("event")
-        payload: dict[str, Any] = msg.get("payload") or {}
-        if event == "start":
-            caller_phone = payload.get("caller_phone")
+        event = msg.get("t") or msg.get("event")  # `t` is 46elks; `event` is dev/test
+        if event == "hello":
+            caller_phone = msg.get("from")
             if caller_phone:
                 call.caller_phone = caller_phone
                 db.add(call)
                 db.commit()
+            log.info("bridge.hello", caller=caller_phone, callid=msg.get("callid"))
             continue
-        if event == "media":
-            audio_b64 = payload.get("audio_b64", "")
+        if event == "audio":
+            audio_b64 = msg.get("data") or (msg.get("payload") or {}).get("audio_b64", "")
             if not audio_b64:
                 continue
-            mulaw = base64.b64decode(audio_b64)
-            pcm16 = audio_codec.mulaw_to_pcm16k(mulaw)
-            recording.add_caller_pcm16k(pcm16)
+            pcm24 = base64.b64decode(audio_b64)
+            recording.add_caller_pcm24k(pcm24)
+            pcm16 = audio_codec.pcm24k_to_pcm16k(pcm24)
             await session.send_realtime_input(
                 audio=gtypes.Blob(data=pcm16, mime_type="audio/pcm;rate=16000")
             )
             continue
-        if event == "stop":
+        if event == "sync":
+            await websocket.send_json({"t": "sync"})
+            continue
+        if event in ("bye", "stop"):
+            log.info("bridge.bye", reason=msg.get("reason"))
             break
 
 
@@ -173,22 +189,25 @@ async def _drain_gemini(
             data = response.data
             if data:
                 recording.add_ai_pcm24k(data)
-                mulaw = audio_codec.pcm24k_to_mulaw(data)
+                # Gemini emits PCM 24k mono — same wire format 46elks expects.
                 await websocket.send_json(
-                    {
-                        "event": "media",
-                        "payload": {"audio_b64": base64.b64encode(mulaw).decode()},
-                    }
+                    {"t": "audio", "data": base64.b64encode(data).decode()}
                 )
 
-            text = response.text
-            if text:
-                _persist_text(db, call.id, TranscriptRole.AI, text, ts0)
+            sc = response.server_content
+            if sc is not None:
+                # Server-side transcripts (in/out)
+                if sc.input_transcription and (t_in := sc.input_transcription.text or ""):
+                    _persist_text(db, call.id, TranscriptRole.CALLER, t_in, ts0)
+                if sc.output_transcription and (t_out := sc.output_transcription.text or ""):
+                    _persist_text(db, call.id, TranscriptRole.AI, t_out, ts0)
+                if getattr(sc, "interrupted", False):
+                    # Stop our outbound playback at the provider so the model
+                    # can hear the caller again immediately.
+                    await websocket.send_json({"t": "interrupt"})
 
-            if response.server_content and response.server_content.input_transcription:
-                t = response.server_content.input_transcription.text or ""
-                if t:
-                    _persist_text(db, call.id, TranscriptRole.CALLER, t, ts0)
+            if response.text:
+                _persist_text(db, call.id, TranscriptRole.AI, response.text, ts0)
         tracker.end_turn()
 
 

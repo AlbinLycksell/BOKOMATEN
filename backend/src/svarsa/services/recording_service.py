@@ -50,6 +50,11 @@ class RecordingBuffer:
         out = resample_poly(samples, GEMINI_OUT_RATE, 16000)
         self.caller_chunks.append(np.clip(out, -32768, 32767).astype(np.int16).tobytes())
 
+    def add_caller_pcm24k(self, pcm24k: bytes) -> None:
+        """Caller leg already at 24k — used for the 46elks pcm_24000 path."""
+        if pcm24k:
+            self.caller_chunks.append(pcm24k)
+
     def add_ai_pcm24k(self, pcm24k: bytes) -> None:
         if pcm24k:
             self.ai_chunks.append(pcm24k)
