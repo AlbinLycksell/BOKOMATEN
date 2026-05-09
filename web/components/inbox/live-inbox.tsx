@@ -13,11 +13,12 @@ const FIRMA_ID = "01J0000FIRM0ANDERSSONSVVS00";
 interface LiveInboxProps {
   initialData: CallRead[];
   intent?: Intent;
+  status?: string;
 }
 
-export function LiveInbox({ initialData, intent }: LiveInboxProps) {
+export function LiveInbox({ initialData, intent, status }: LiveInboxProps) {
   const qc = useQueryClient();
-  const { data, isFetching } = useCallsQuery({ intent });
+  const { data, isFetching } = useCallsQuery({ intent, status });
   const calls = data ?? initialData;
   const [pulse, setPulse] = useState<string | null>(null);
   const lastCreatedRef = useRef<string | null>(null);

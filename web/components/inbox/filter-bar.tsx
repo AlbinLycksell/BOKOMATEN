@@ -4,12 +4,13 @@ import { useState } from "react";
 
 import { cn } from "@/lib/utils";
 
-type Filter = "all" | "akut" | "needs_followup" | "handled";
+export type Filter = "all" | "akut" | "offert" | "bokning" | "handled";
 
 const OPTIONS: { value: Filter; label: string }[] = [
   { value: "all", label: "Alla" },
-  { value: "akut", label: "Akuta" },
-  { value: "needs_followup", label: "Att följa upp" },
+  { value: "akut", label: "Akut" },
+  { value: "offert", label: "Offert" },
+  { value: "bokning", label: "Bokning" },
   { value: "handled", label: "Hanterade" },
 ];
 

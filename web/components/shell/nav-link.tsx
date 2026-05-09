@@ -11,11 +11,28 @@ interface NavLinkProps {
   label: string;
   icon: ReactNode;
   badge?: string;
+  mobile?: boolean;
 }
 
-export function NavLink({ href, label, icon, badge }: NavLinkProps) {
+export function NavLink({ href, label, icon, badge, mobile }: NavLinkProps) {
   const pathname = usePathname();
   const isActive = pathname === href || pathname.startsWith(`${href}/`);
+
+  if (mobile) {
+    return (
+      <Link
+        href={href}
+        className={cn(
+          "flex flex-1 flex-col items-center gap-1 py-3 text-[11px] transition-colors",
+          isActive ? "text-accent font-medium" : "text-text-muted",
+        )}
+      >
+        <span className={cn("flex", isActive ? "text-accent" : "text-text-muted")}>{icon}</span>
+        <span>{label}</span>
+      </Link>
+    );
+  }
+
   return (
     <Link
       href={href}

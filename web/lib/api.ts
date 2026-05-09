@@ -9,9 +9,7 @@ import type {
 const API_BASE =
   typeof window === "undefined"
     ? process.env.SWITCHBOARD_API_BASE ?? "http://127.0.0.1:8000"
-    : "/api/proxy" in window
-      ? "/api/proxy"
-      : "";
+    : "/api/proxy";
 
 const FIRMA_HEADER: Record<string, string> = {
   "X-Firma-Id": "01J0000FIRM0ANDERSSONSVVS00",

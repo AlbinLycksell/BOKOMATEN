@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ActionsBar } from "@/components/call/actions-bar";
 import { CustomerCard } from "@/components/call/customer-card";
 import { SummaryCard } from "@/components/call/summary-card";
-import { Transcript } from "@/components/call/transcript";
 import { AudioPlayer } from "@/components/ui/audio-player";
 import { IntentBadge } from "@/components/inbox/intent-badge";
 import { SeverityDot } from "@/components/inbox/severity-dot";
@@ -55,15 +54,6 @@ export default async function CallPage({
                   src={call.recording_url}
                   duration={call.duration_seconds}
                 />
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Transkription</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Transcript segments={call.transcript} />
               </CardContent>
             </Card>
 

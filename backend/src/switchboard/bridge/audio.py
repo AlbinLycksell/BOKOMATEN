@@ -41,6 +41,11 @@ def mulaw_to_pcm16k(mulaw_frames: bytes) -> bytes:
     return _resample_pcm16(pcm8k, MULAW_RATE, GEMINI_IN_RATE)
 
 
+def pcm24k_to_pcm16k(pcm24k: bytes) -> bytes:
+    """Caller 24kHz → Gemini input 16kHz (direct WebSocket path, no telephony)."""
+    return _resample_pcm16(pcm24k, GEMINI_OUT_RATE, GEMINI_IN_RATE)
+
+
 def pcm24k_to_mulaw(pcm24k: bytes) -> bytes:
     """Gemini output → telephony: PCM16 24kHz → μ-law 8kHz."""
     pcm8k = _resample_pcm16(pcm24k, GEMINI_OUT_RATE, MULAW_RATE)

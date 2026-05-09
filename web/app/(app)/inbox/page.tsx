@@ -1,6 +1,5 @@
 import { Topbar } from "@/components/shell/topbar";
-import { FilterBar } from "@/components/inbox/filter-bar";
-import { LiveInbox } from "@/components/inbox/live-inbox";
+import { InboxClient } from "@/components/inbox/inbox-client";
 import { listCalls } from "@/lib/api";
 import type { CallRead } from "@/lib/api-models";
 
@@ -22,8 +21,7 @@ export default async function InboxPage() {
         title="Inkorg"
         description={`${calls.length} samtal — uppdateras live`}
       />
-      <FilterBar />
-      <LiveInbox initialData={calls} />
+      <InboxClient initialData={calls} />
     </>
   );
 }
