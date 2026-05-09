@@ -6,6 +6,7 @@ import {
   Circle,
   Clock,
   Cog,
+  FlaskConical,
   Inbox,
   MessageSquare,
   Pause,
@@ -33,3 +34,4 @@ export const HandledIcon = CheckCircle2;
 export const PlayIcon = Play;
 export const PauseIcon = Pause;
 export const FilterIcon = Settings2;
+export const AdminIcon = FlaskConical;

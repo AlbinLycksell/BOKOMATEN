@@ -1,4 +1,5 @@
 import {
+  AdminIcon,
   CalendarIcon,
   CustomersIcon,
   InboxIcon,
@@ -23,6 +24,7 @@ export function Sidebar() {
         <NavLink href="/inbox" label="Inkorg" icon={<InboxIcon className="h-4 w-4" />} />
         <NavLink href="/bookings" label="Bokningar" icon={<CalendarIcon className="h-4 w-4" />} />
         <NavLink href="/customers" label="Kunder" icon={<CustomersIcon className="h-4 w-4" />} />
+        <NavLink href="/admin" label="Admin & Test" icon={<AdminIcon className="h-4 w-4" />} />
         <NavLink href="/settings" label="Inställningar" icon={<SettingsIcon className="h-4 w-4" />} />
       </nav>
 

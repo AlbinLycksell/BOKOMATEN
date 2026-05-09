@@ -1,4 +1,5 @@
 import {
+  AdminIcon,
   CalendarIcon,
   CustomersIcon,
   InboxIcon,
@@ -12,6 +13,7 @@ export function BottomNav() {
       <NavLink href="/inbox" label="Inkorg" icon={<InboxIcon className="h-5 w-5" />} mobile />
       <NavLink href="/bookings" label="Bokningar" icon={<CalendarIcon className="h-5 w-5" />} mobile />
       <NavLink href="/customers" label="Kunder" icon={<CustomersIcon className="h-5 w-5" />} mobile />
+      <NavLink href="/admin" label="Admin" icon={<AdminIcon className="h-5 w-5" />} mobile />
       <NavLink href="/settings" label="Inställningar" icon={<SettingsIcon className="h-5 w-5" />} mobile />
     </nav>
   );
