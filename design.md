@@ -1,9 +1,9 @@
-# Swichboard — Designspråk
+# Switchboard — Designspråk
 ## Verkstad: a design language for the digital tradesman
 
 ## 1. The vision in one paragraph
 
-Swichboard is the digital colleague Magnus didn't know he could afford. The brand has to feel like that — earned, dignified, quietly competent. Not a Stockholm startup wearing a hi-vis vest as a costume. Not a consumer app pretending to do trades. Something that belongs on the same workbench as a Bahco-skiftnyckel and a Hilti-borrmaskin: built by people who understand the work, finished to a higher standard than the job requires, designed to outlast the next tool fashion. The brand's job is to make a 47-year-old VVS-företagare in Bromma look at it and think, _"Det här ser ut som något jag redan använder."_
+Switchboard is the digital colleague Magnus didn't know he could afford. The brand has to feel like that — earned, dignified, quietly competent. Not a Stockholm startup wearing a hi-vis vest as a costume. Not a consumer app pretending to do trades. Something that belongs on the same workbench as a Bahco-skiftnyckel and a Hilti-borrmaskin: built by people who understand the work, finished to a higher standard than the job requires, designed to outlast the next tool fashion. The brand's job is to make a 47-year-old VVS-företagare in Bromma look at it and think, _"Det här ser ut som något jag redan använder."_
 
 ---
 
@@ -17,29 +17,29 @@ Verkstad is built from three intersecting influences, each load-bearing.
 
 Pleo's marketing surfaces are a masterclass in restraint. The display headline ("_Låt utgifterna lyfta ditt företagande_") sits in the optical center of an almost empty composition. The product screenshot doesn't float in a void — it lives among real objects: a glass of water, a brass-faced clock, an amber kettle, a calculator. The photography says: this product is part of the actual life of a real Swedish business owner, sitting on the same morning desk where the coffee cools.
 
-Swichboard borrows three things from Pleo, directly:
+Switchboard borrows three things from Pleo, directly:
 
 **Editorial composition over feature-list density.** Marketing pages feel like a magazine article, not a product spec. One headline, one hero image, one decision. Density only when the user has earned it — deep documentation, integration pages, the API reference. The homepage shows what the product feels like, not what it does.
 
-**Photography as the brand.** Real Swedish hantverker-life. A hand resting on a worn van steering wheel. A phone in a magnetic holder on the dashboard, screen lit with a Swichboard notification. An Apple Watch face visible against a navy Snickers-jacket sleeve, the orange Swichboard pip on the screen. A morning kök i Skellefteå at 06:30 with frost on the window. Never stock photography. Never models pretending to be electricians. The photographer brief: shoot the actual customers, with their actual tools, in their actual lives. The brand becomes recognizable from across the room because the photography is so specifically Swedish-trades that it cannot be confused with anything else.
+**Photography as the brand.** Real Swedish hantverker-life. A hand resting on a worn van steering wheel. A phone in a magnetic holder on the dashboard, screen lit with a Switchboard notification. An Apple Watch face visible against a navy Snickers-jacket sleeve, the orange Switchboard pip on the screen. A morning kök i Skellefteå at 06:30 with frost on the window. Never stock photography. Never models pretending to be electricians. The photographer brief: shoot the actual customers, with their actual tools, in their actual lives. The brand becomes recognizable from across the room because the photography is so specifically Swedish-trades that it cannot be confused with anything else.
 
-**The pill button.** Pleo's rounded buttons are signature. Swichboard adopts them: generous corner radius, honest borders, primary in solid navy or signaloranje, secondary in outline-only. Same shape and proportions across web, native iOS, native Android, and SMS-link landing pages. One pill, everywhere.
+**The pill button.** Pleo's rounded buttons are signature. Switchboard adopts them: generous corner radius, honest borders, primary in solid navy or signaloranje, secondary in outline-only. Same shape and proportions across web, native iOS, native Android, and SMS-link landing pages. One pill, everywhere.
 
 ### 2.2 From Klarna — the bold layout system
 
 Klarna's brand guidelines are unembarrassed about it: "Scale headlines as big as possible, and maybe add a playful touch by offsetting a word or line to create tension." The grid is rigorous: a 6% margin of the shortest side as standard, 12% in double-margin contexts, gutters always half of the margin size, trademark width at 1/3 of the format's shortest side. Layouts are type-led OR image-led — never both fighting for attention. Off-white preferred, occasionally Black or Klarna Pink for extra impact and contrast.
 
-Swichboard borrows three things from Klarna, structurally:
+Switchboard borrows three things from Klarna, structurally:
 
 **The grid discipline.** Verkstad adopts the same 6% / 12% / half-gutter / one-third-trademark system. This is not a suggestion. It is the rule that allows a junior designer in 2027 to produce a marketing asset that sits comfortably next to one a senior designer made in 2026. The grid does the heavy lifting; the brand becomes consistent without anyone having to think about consistency.
 
 **The type-led layout.** When the message is _"Magnus missar inga akutsamtal"_, that's the entire layout. Type goes large, breathes, sits left-aligned in the grid, allows itself an offset word for tension. No supporting illustration. No product screenshot below it. The headline _is_ the design. This direction unlocks an entire category of marketing surfaces — outdoor (job-site billboard near Nordbygg), social cards, sales-deck section dividers — that Pleo's photography-led system can't reach affordably.
 
-**One signal color, used with conviction.** Klarna's pink is Klarna. Swichboard's signal color is **signaloranje** — the high-vis orange of Swedish hi-vis vests, road-work signage, life jackets, snow-plow blades, and crucially, the housings of Husqvarna and Stihl tools. It signals attention and safety, both of which are at the core of what the product does. Used in the same proportion that Klarna uses pink: rare, but unforgettable. The CTA button. The emergency state. The wordmark accent. Never as decoration, always as signal.
+**One signal color, used with conviction.** Klarna's pink is Klarna. Switchboard's signal color is **signaloranje** — the high-vis orange of Swedish hi-vis vests, road-work signage, life jackets, snow-plow blades, and crucially, the housings of Husqvarna and Stihl tools. It signals attention and safety, both of which are at the core of what the product does. Used in the same proportion that Klarna uses pink: rare, but unforgettable. The CTA button. The emergency state. The wordmark accent. Never as decoration, always as signal.
 
 ### 2.3 From Swedish industrial heritage — the honest tool
 
-This is the influence that distinguishes Swichboard from being "just another well-designed Scandinavian SaaS." Magnus does not buy products from companies that sell to office workers. He buys Hilti drills, Bahco wrenches, Husqvarna saws, Snickers workwear, Iittala glassware (because his sambo bought it), Volvo lastbilar, Atlas Copco kompressorer. These products share a design philosophy that goes deeper than aesthetics:
+This is the influence that distinguishes Switchboard from being "just another well-designed Scandinavian SaaS." Magnus does not buy products from companies that sell to office workers. He buys Hilti drills, Bahco wrenches, Husqvarna saws, Snickers workwear, Iittala glassware (because his sambo bought it), Volvo lastbilar, Atlas Copco kompressorer. These products share a design philosophy that goes deeper than aesthetics:
 
 **Form follows performance, not fashion.** A Hilti drill looks like a Hilti drill in 2002 and in 2026. The design serves the ergonomics, the heat dissipation, the dust ingress, the dropped-from-a-ladder durability. Aesthetics emerge from those decisions, not the other way around.
 
@@ -47,7 +47,7 @@ This is the influence that distinguishes Swichboard from being "just another wel
 
 **The user is presumed competent.** The interfaces are dense with information when information is needed. No hand-holding modals. The manual is in the box. The trust is implicit and reciprocal.
 
-Swichboard borrows the philosophy: every visual choice in the product UI must be defensible on functional grounds first, beauty second. The orange isn't decorative — it's the color that tells Magnus, in poor light, in a kryputrymme, with one bar of 4G, that THIS is the tap-target that handles the akutsamtal. Beauty, in Verkstad, is what's left over when nothing dishonest remains.
+Switchboard borrows the philosophy: every visual choice in the product UI must be defensible on functional grounds first, beauty second. The orange isn't decorative — it's the color that tells Magnus, in poor light, in a kryputrymme, with one bar of 4G, that THIS is the tap-target that handles the akutsamtal. Beauty, in Verkstad, is what's left over when nothing dishonest remains.
 
 ---
 
@@ -86,7 +86,7 @@ If Alex stops trusting the akutnotis — if it cries wolf even once a month — 
 
 Inger never sees the design at all. She experiences only the voice. But the brand promise is delivered in those 38 seconds: a calm, competent Swedish voice that takes her seriously, doesn't make her repeat herself, and leaves her with the certainty that someone is coming.
 
-The design system must constantly remember Inger. Every visual decision Magnus or Lena makes must serve her experience indirectly — because her experience is the product. The dashboard exists to make sure her vattenläcka doesn't get lost. The brand exists so Magnus chooses Swichboard over a billigare svarstjänst, which means Inger gets answered when she calls.
+The design system must constantly remember Inger. Every visual decision Magnus or Lena makes must serve her experience indirectly — because her experience is the product. The dashboard exists to make sure her vattenläcka doesn't get lost. The brand exists so Magnus chooses Switchboard over a billigare svarstjänst, which means Inger gets answered when she calls.
 
 This is the discipline: when in doubt, the design choice that helps Inger gets answered wins. Not the one that wins a Dribbble like.
 
@@ -94,13 +94,13 @@ This is the discipline: when in doubt, the design choice that helps Inger gets a
 
 ## 4. Mood and atmosphere
 
-Swichboard is:
+Switchboard is:
 
 **Daylight, not stage lighting.** Photography uses natural light — the cold blue-gray of a January morning in Bromma, the amber of a summer afternoon through a kitchen window in Skellefteå, the headlamp-yellow of a basement work light. Never the flat ringlight studio look of consumer SaaS. If the photo could have been shot in California, reshoot it.
 
 **Quiet, not loud.** When Magnus opens the dashboard, the experience is calm. The signaloranje is rare enough that when it appears, attention follows. A constantly-alarming dashboard is one Magnus stops opening — and when Magnus stops opening it, Lena stops trusting it.
 
-**Professional, not corporate.** Professional means: typography-led, content-respecting, informationally dense where appropriate. Corporate means: stock photography, hero illustrations of diverse cartoon people, gradient backgrounds, "thought leadership," the word "empower." Swichboard is the former, never the latter.
+**Professional, not corporate.** Professional means: typography-led, content-respecting, informationally dense where appropriate. Corporate means: stock photography, hero illustrations of diverse cartoon people, gradient backgrounds, "thought leadership," the word "empower." Switchboard is the former, never the latter.
 
 **Warm, not cute.** The brand has humor — it lives in the voice of the AI itself ("_kanon, då bokar jag in det_"), in the morning sammanfattning that says _"Du fångade tre akutjobb i natt — kosta dig själv en till kopp kaffe på det"_. The warmth comes from voice and copy, not from rounded illustrations and emoji.
 
@@ -144,17 +144,17 @@ That's the palette. Seven colors. Anyone designing in Verkstad who wants to add 
 
 ## 7. Photography and imagery direction
 
-This is the highest-leverage part of the brand. Get this right and Swichboard is recognizable from twenty meters; get it wrong and it looks like every other SaaS.
+This is the highest-leverage part of the brand. Get this right and Switchboard is recognizable from twenty meters; get it wrong and it looks like every other SaaS.
 
 **Subjects.** Real Swedish hantverkare in real Swedish working environments. VVS-firmor in 1970s-built bostadsrättsföreningar. Elektriker in panelbilar. Snickare in newbuilds in Hökarängen. Plattsättare in renoveringsprojekt. Never models. Never staged "diverse young professional team" group shots.
 
 **Light.** Natural, almost always. Morning light through kontorsfönster in Bromma. Headlamp-yellow in källare and kryputrymmen. Cold December afternoons. Midsommar sun. The light tells the viewer where in Sweden, and what time of year, the photograph is from — and that specificity is the brand.
 
-**Objects.** Tools and trade objects are protagonists, not props. A Bahco skiftnyckel resting on a faktura. A iPad propped against a coffee cup at 06:30. An iPhone in a magnetic dashboard holder showing a Swichboard notification. Honest, used, scuffed. Nothing brand-new looking.
+**Objects.** Tools and trade objects are protagonists, not props. A Bahco skiftnyckel resting on a faktura. A iPad propped against a coffee cup at 06:30. An iPhone in a magnetic dashboard holder showing a Switchboard notification. Honest, used, scuffed. Nothing brand-new looking.
 
 **Composition.** Borrowed from Pleo: the still-life sensibility. Objects are arranged but the arrangement looks accidental. Negative space is generous. The product screenshot is integrated into the physical scene, not floating against a gradient.
 
-**What never appears in Swichboard photography:**
+**What never appears in Switchboard photography:**
 - Stock photography of any kind
 - Models who are clearly not tradespeople
 - Open-plan offices with bean bags
@@ -190,7 +190,7 @@ The brand's tone of voice is inseparable from the visual system. Three rules:
 
 ---
 
-## 10. What Swichboard is NOT — the anti-brand
+## 10. What Switchboard is NOT — the anti-brand
 
 The negative space matters. These directions are explicitly rejected.
 

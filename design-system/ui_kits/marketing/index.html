@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="utf-8"/>
+<title>Switchboard · Svarstjänsten för hantverkare</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml"/>
+<link rel="stylesheet" href="../../colors_and_type.css"/>
+<style>
+  body { margin:0; }
+  .pricing-section { background: var(--linne); padding: 96px 6%; }
+  .pricing-inner { max-width: 1280px; margin: 0 auto; }
+  .pricing-head { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: end; margin-bottom: 56px; }
+  .pricing-eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.1em; color: var(--fg-muted); margin-bottom: 18px; }
+  .pricing-h2 { font-family: var(--font-display); font-size: clamp(40px, 5.5vw, 80px); line-height: 1.0; letter-spacing: -0.025em; font-weight: 600; color: var(--fg-strong); margin: 0; max-width: 14ch; }
+  .pricing-lede { font-size: 18px; line-height: 1.55; color: var(--fg); max-width: 44ch; }
+  .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .briefing { background: var(--linne); padding: 96px 6%; border-top: 1px solid var(--border); }
+  .briefing-inner { max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1.3fr; gap: 64px; align-items: start; }
+  .briefing-eye { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.1em; color: var(--fg-muted); margin-bottom: 18px; }
+  .briefing-h { font-family: var(--font-display); font-size: clamp(32px, 4.5vw, 64px); line-height: 1.05; letter-spacing: -0.02em; font-weight: 600; color: var(--fg-strong); margin: 0 0 16px 0; }
+  .briefing-p { font-size: 17px; line-height: 1.55; color: var(--fg); }
+  .briefing-list { display: grid; gap: 14px; padding: 0; margin: 0; list-style: none; }
+  .briefing-item { display: grid; grid-template-columns: 80px 1fr; align-items: baseline; gap: 18px; padding: 18px 0; border-top: 1px solid var(--border); }
+  .briefing-item:last-child { border-bottom: 1px solid var(--border); }
+  .briefing-tnum { font-family: var(--font-mono); font-feature-settings: "tnum" 1; font-size: 14px; color: var(--fg-muted); letter-spacing: 0.02em; }
+  .briefing-title { font-family: var(--font-display); font-size: 19px; font-weight: 500; color: var(--fg-strong); letter-spacing: -0.005em; line-height: 1.35; }
+  .briefing-sub { font-size: 14px; color: var(--fg-muted); margin-top: 4px; }
+</style>
+</head>
+<body class="verkstad" data-screen-label="Marketing · Home">
+  <div id="root"></div>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <script type="text/babel" src="TopNav.jsx"></script>
+  <script type="text/babel" src="Hero.jsx"></script>
+  <script type="text/babel" src="PriceCard.jsx"></script>
+  <script type="text/babel" src="QuoteBlock.jsx"></script>
+  <script type="text/babel" src="Footer.jsx"></script>
+
+  <script type="text/babel">
+    const App = () => (
+      <>
+        <TopNav active="Produkt"/>
+        <Hero/>
+
+        {/* Briefing — what the AI captures, in concrete language */}
+        <section className="briefing">
+          <div className="briefing-inner">
+            <div>
+              <div className="briefing-eye">VAD AI:N FÅNGAR</div>
+              <h2 className="briefing-h">Vem, var, vad,<br/>och hur akut.</h2>
+              <p className="briefing-p">Inget annat. AI:n frågar bara det Magnus själv hade frågat. Sedan bokar den in tiden eller skickar vidare till jouren.</p>
+            </div>
+            <ul className="briefing-list">
+              <li className="briefing-item">
+                <span className="briefing-tnum">14:32</span>
+                <div>
+                  <div className="briefing-title">Inger Lindqvist · vattenläcka under diskbänken</div>
+                  <div className="briefing-sub">Bromma · 070-512 44 19 · bokad torsdag 16:00</div>
+                </div>
+              </li>
+              <li className="briefing-item">
+                <span className="briefing-tnum">15:08</span>
+                <div>
+                  <div className="briefing-title">Erik Ahlberg · vill ha offert på badrumsrenovering</div>
+                  <div className="briefing-sub">Hökarängen · sammanfattning skickad till Magnus</div>
+                </div>
+              </li>
+              <li className="briefing-item">
+                <span className="briefing-tnum">19:47</span>
+                <div>
+                  <div className="briefing-title">AKUT · gasläcka misstänks · Eva Sundström</div>
+                  <div className="briefing-sub">Kista · skickad till Alex på jouren · 8 sek till svar</div>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        <QuoteBlock/>
+
+        {/* Pricing */}
+        <section className="pricing-section">
+          <div className="pricing-inner">
+            <div className="pricing-head">
+              <div>
+                <div className="pricing-eyebrow">PRISER · INKL. MOMS</div>
+                <h2 className="pricing-h2">Synligt pris. Inget demo-krav.</h2>
+              </div>
+              <p className="pricing-lede">
+                Vi tror att Magnus inte ska behöva boka ett 30-minuters samtal för att få veta vad det kostar. Allt syns. Säg upp när du vill.
+              </p>
+            </div>
+            <div className="pricing-grid">
+              <PriceCard
+                name="Enskild"
+                price="495 SEK"
+                description="För dig som svarar i telefonen själv. Upp till 80 samtal i månaden."
+                features={[
+                  "AI-svarstjänst 24/7",
+                  "SMS-bekräftelse till kund",
+                  "Kalendersynk · Google, Apple, Fortnox",
+                  "Sammanfattning på morgonen",
+                ]}
+                cta="Kom igång"
+              />
+              <PriceCard
+                name="Företag"
+                price="1 495 SEK"
+                description="För firman med några anställda. Akutnotis till jouren ingår."
+                featured
+                features={[
+                  "Allt i Enskild",
+                  "Akutnotis till jourtekniker",
+                  "Upp till 5 användare",
+                  "Anpassad röst och välkomstfras",
+                  "300 samtal i månaden",
+                ]}
+                cta="Boka demo"
+              />
+              <PriceCard
+                name="Verkstad"
+                price="Offert"
+                period=""
+                description="Större firmor med egen växel, eget ärendesystem, eller behov av API."
+                features={[
+                  "Allt i Företag",
+                  "API + webhooks",
+                  "SSO · Microsoft Entra, Google Workspace",
+                  "Dedikerad kundansvarig",
+                  "Anpassat månadsavtal",
+                ]}
+                cta="Prata med oss"
+              />
+            </div>
+          </div>
+        </section>
+
+        <Footer/>
+      </>
+    );
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+  </script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Brand · Voice</title>
+<link rel="stylesheet" href="../colors_and_type.css"/>
+<style>
+  body { padding: 22px 28px; background: var(--linne); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .card { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
+  .card.bad { background: var(--linne-deep); }
+  .head { display: flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--fg-muted); margin-bottom: 10px; }
+  .ok  { color: var(--positive); }
+  .no  { color: var(--critical); }
+  .line { font-family: var(--font-display); font-weight: 500; color: var(--fg-strong); font-size: 16px; line-height: 1.45; }
+  .line + .line { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
+  .strike { text-decoration: line-through; color: var(--fg-muted); font-weight: 400; }
+</style>
+</head>
+<body class="verkstad">
+  <div class="grid">
+    <div class="card">
+      <div class="head"><span class="ok">●</span> Verkstad voice</div>
+      <div class="line">"Det funkade. Bokningen ligger i kalendern."</div>
+      <div class="line">"Du fångade tre akutjobb i natt."</div>
+      <div class="line">"Vattenläcka kl 14:32"</div>
+      <div class="line">"Boka tid med Magnus"</div>
+    </div>
+    <div class="card bad">
+      <div class="head"><span class="no">●</span> Anti-Verkstad</div>
+      <div class="line strike">"Your appointment has been successfully scheduled and added to your calendar."</div>
+      <div class="line strike">"🎉 Welcome aboard! Get started — it takes 30 seconds!"</div>
+      <div class="line strike">"New incident detected"</div>
+      <div class="line strike">"Schedule a service appointment"</div>
+    </div>
+  </div>
+</body>
+</html>

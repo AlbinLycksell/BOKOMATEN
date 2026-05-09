@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Type · Tabular numerals</title>
+<link rel="stylesheet" href="../colors_and_type.css"/>
+<style>
+  html, body { margin:0; padding:0; }
+  body { background: var(--linne); font-family: var(--font-body); color: var(--fg); padding: 24px 28px; }
+  .note { font-size: 13px; color: var(--fg-muted); margin-bottom: 14px; max-width: 620px; line-height: 1.5; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .card { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
+  .label { font-family: var(--font-mono); font-size: 11px; color: var(--fg-muted); letter-spacing: 0.04em; margin-bottom: 8px; }
+  .stack { display: grid; gap: 4px; font-size: 18px; color: var(--fg-strong); font-feature-settings: "tnum" 1, "lnum" 1; font-variant-numeric: tabular-nums; }
+  .em { color: var(--signal); font-weight: 500; }
+</style>
+</head>
+<body>
+  <div class="note">Tabular numerals are mandatory for time, currency, and phone numbers. Magnus reads them at a glance.</div>
+  <div class="grid">
+    <div class="card">
+      <div class="label">Tid · 24-hour, lowercase month</div>
+      <div class="stack">
+        <div>22 maj &middot; 14:32</div>
+        <div>23 maj &middot; 06:30</div>
+        <div>24 maj &middot; 22:18</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="label">Kronor · non-breaking space, SEK postfix</div>
+      <div class="stack">
+        <div>1&nbsp;495&nbsp;SEK</div>
+        <div>12&nbsp;850&nbsp;SEK</div>
+        <div class="em">29&nbsp;995&nbsp;SEK</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="label">Telefon · grouped</div>
+      <div class="stack">
+        <div>070-512&nbsp;44&nbsp;19</div>
+        <div>08-555&nbsp;112&nbsp;30</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="label">Org.nr</div>
+      <div class="stack">
+        <div>556987-1234</div>
+        <div>559042-5566</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

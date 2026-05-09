@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from switchboard import __version__
 from switchboard.api import (
+    routes_admin,
     routes_auth,
     routes_billing,
     routes_calls,
@@ -87,6 +88,7 @@ def create_app() -> FastAPI:
     app.include_router(routes_billing.router)
     app.include_router(routes_training.router)
     app.include_router(routes_metrics.router)
+    app.include_router(routes_admin.router)
     app.include_router(elks_voice.router)
     app.include_router(ws_inbox.router)
     app.include_router(bridge_ws.router)

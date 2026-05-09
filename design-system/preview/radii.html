@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Radii</title>
+<link rel="stylesheet" href="../colors_and_type.css"/>
+<style>
+  html, body { margin:0; padding:0; }
+  body { background: var(--linne); font-family: var(--font-body); color: var(--fg); padding: 22px 28px; }
+  .row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
+  .item { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .shape { width: 96px; height: 64px; background: var(--havsbla); border: 1px solid var(--havsbla); }
+  .name { font-family: var(--font-mono); font-size: 11px; color: var(--fg-strong); }
+  .role { font-size: 11px; color: var(--fg-muted); text-align: center; line-height: 1.4; }
+</style>
+</head>
+<body>
+  <div class="row">
+    <div class="item"><div class="shape" style="border-radius:0"></div><div class="name">--r-none · 0</div><div class="role">photography frames</div></div>
+    <div class="item"><div class="shape" style="border-radius:6px"></div><div class="name">--r-tight · 6</div><div class="role">chips, code, micro</div></div>
+    <div class="item"><div class="shape" style="border-radius:10px"></div><div class="name">--r-input · 10</div><div class="role">inputs, selects</div></div>
+    <div class="item"><div class="shape" style="border-radius:14px"></div><div class="name">--r-card · 14</div><div class="role">cards, panels</div></div>
+    <div class="item"><div class="shape" style="border-radius:9999px"></div><div class="name">--r-pill · ∞</div><div class="role">buttons (signature)</div></div>
+  </div>
+</body>
+</html>

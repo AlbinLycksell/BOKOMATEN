@@ -17,6 +17,7 @@ from switchboard.tools.schemas import (
     CheckAvailabilityArgs,
     CheckRotEligibilityArgs,
     CreateLeadArgs,
+    DisableRecordingArgs,
     EscalateToOwnerArgs,
     LookupCustomerArgs,
     LookupJobStatusArgs,
@@ -76,6 +77,11 @@ TOOL_DESCRIPTIONS: dict[str, tuple[type[BaseModel], str]] = {
     "take_message": (
         TakeMessageArgs,
         "Avsluta med strukturerat meddelande. Sista utvägen.",
+    ),
+    "disable_recording_for_call": (
+        DisableRecordingArgs,
+        "Stäng av inspelning av detta samtal direkt. Anropa endast om "
+        "kunden uttryckligen invänder mot att samtalet spelas in.",
     ),
 }
 

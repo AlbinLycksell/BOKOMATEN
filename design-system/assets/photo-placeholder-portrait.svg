@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" width="800" height="1000" role="img" aria-label="Photography placeholder portrait">
+  <defs>
+    <linearGradient id="amberkok" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#C2966B"></stop>
+      <stop offset="1" stop-color="#3D2F22"></stop>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="1000" fill="url(#amberkok)"></rect>
+  <g transform="translate(48 880)" fill="#F4EFE6">
+    <rect x="0" y="0" width="6" height="80" fill="#E25822"></rect>
+    <text x="20" y="20" font-family="Geist, Söhne, Helvetica Neue, Arial, sans-serif" font-size="13" font-weight="500" letter-spacing="0.08em" opacity="0.75">PORTRAIT · PLACEHOLDER</text>
+    <text x="20" y="48" font-family="Geist, Söhne, Helvetica Neue, Arial, sans-serif" font-size="20" font-weight="500">Hantverkare · 06:30 morning kök</text>
+  </g>
+</svg>

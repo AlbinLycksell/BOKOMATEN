@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Color · Brand</title>
+<link rel="stylesheet" href="../colors_and_type.css"/>
+<style>
+  html, body { margin:0; padding:0; }
+  body { background: var(--linne); font-family: var(--font-body); color: var(--fg); }
+  .wrap { padding: 20px 24px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .swatch { border-radius: 12px; overflow: hidden; border: 1px solid var(--border); background: #fff; }
+  .swatch .chip { height: 92px; }
+  .swatch .meta { padding: 10px 12px 12px; }
+  .name { font-size: 14px; font-weight: 500; color: var(--fg-strong); }
+  .hex  { font-family: var(--font-mono); font-size: 12px; color: var(--fg-muted); margin-top: 2px; letter-spacing: 0.02em; }
+  .role { font-size: 11px; color: var(--fg-muted); margin-top: 6px; line-height: 1.4; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="swatch"><div class="chip" style="background:#0A1F33"></div><div class="meta"><div class="name">Havsblå</div><div class="hex">#0A1F33</div><div class="role">Wordmark · navigation · primary type</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#F4EFE6"></div><div class="meta"><div class="name">Linne</div><div class="hex">#F4EFE6</div><div class="role">Primary surface · warm off-white</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#E25822;position:relative"><span style="position:absolute;left:12px;bottom:8px;color:#fff;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;opacity:.85">Sacred · use rare</span></div><div class="meta"><div class="name">Signaloranje</div><div class="hex">#E25822</div><div class="role">Primary CTA · akutnotis · wordmark dot</div></div></div>
+  </div>
+</body>
+</html>

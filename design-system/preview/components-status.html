@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Components · Status</title>
+<link rel="stylesheet" href="../colors_and_type.css"/>
+<style>
+  body { padding: 22px 28px; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 14px; }
+  .pill { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 12px; border-radius: 9999px; font-size: 13px; font-weight: 500; }
+  .pos { background: rgba(47,82,51,0.12); color: #2F5233; }
+  .crit{ background: rgba(168,46,46,0.12); color: #A82E2E; }
+  .sig { background: rgba(226,88,34,0.16); color: #C84612; }
+  .neu { background: var(--linne-deep); color: var(--fg-strong); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .label { font-size: 12px; color: var(--fg-muted); margin-bottom: 6px; font-family: var(--font-mono); letter-spacing: 0.04em; }
+</style>
+</head>
+<body class="verkstad">
+  <div class="label">Status pills</div>
+  <div class="row">
+    <span class="pill pos"><span class="dot" style="background:#2F5233"></span>Bokad torsdag 16:00</span>
+    <span class="pill sig"><span class="dot" style="background:#E25822"></span>Akut · väntar på Alex</span>
+    <span class="pill crit"><span class="dot" style="background:#A82E2E"></span>Gasläcka · ring 112</span>
+    <span class="pill neu"><span class="dot" style="background:#7C7466"></span>Avslutad</span>
+    <span class="pill neu">Missat samtal</span>
+  </div>
+  <div class="label">Live state — pulses once, then still</div>
+  <div class="row">
+    <span class="pill sig v-akut-pulse" style="height:36px; padding: 0 16px; font-size: 14px;"><span class="dot v-heartbeat" style="background:#E25822;width:10px;height:10px"></span>Pågående samtal · Inger Lindqvist</span>
+  </div>
+</body>
+</html>

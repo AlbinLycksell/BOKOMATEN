@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Layout · Klarna grid</title>
+<link rel="stylesheet" href="../colors_and_type.css"/>
+<style>
+  html, body { margin:0; padding:0; }
+  body { background: var(--linne); font-family: var(--font-body); color: var(--fg); padding: 18px 22px; }
+  .frame { position: relative; height: 200px; background: var(--linne-cool); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .marg { position: absolute; top: 0; bottom: 0; background: rgba(226,88,34,0.10); }
+  .marg.l { left: 0; }
+  .marg.r { right: 0; }
+  .gut  { position: absolute; top: 0; bottom: 0; background: rgba(10,31,51,0.06); }
+  .col  { position: absolute; top: 0; bottom: 0; background: rgba(10,31,51,0.04); }
+  .lbl  { position: absolute; bottom: 8px; font-family: var(--font-mono); font-size: 10px; color: var(--fg-strong); letter-spacing: 0.04em; }
+  .head { font-family: var(--font-display); font-weight: 600; color: var(--fg-strong); letter-spacing: -0.02em; line-height: 1.0; position: absolute; top: 30px; font-size: 56px; }
+  .tm   { position: absolute; top: 14px; height: 14px; background: var(--havsbla); border-radius: 7px; }
+  .note { font-size: 12px; color: var(--fg-muted); margin-top: 10px; line-height: 1.5; }
+</style>
+</head>
+<body>
+  <div class="frame">
+    <!-- Margins 6% -->
+    <div class="marg l" style="width:6%"></div>
+    <div class="marg r" style="width:6%"></div>
+    <!-- Gutters at 25%, 50%, 75% (6 cols) -->
+    <div class="gut" style="left:calc(6% + 21.5%); width:1.5%"></div>
+    <div class="gut" style="left:calc(6% + 44%); width:1.5%"></div>
+    <div class="gut" style="left:calc(6% + 66.5%); width:1.5%"></div>
+    <!-- Trademark — 1/3 width -->
+    <div class="tm" style="left: 6%; width: 33.3%"></div>
+    <!-- Type-led headline -->
+    <div class="head" style="left:6%; right:6%;">Magnus<br/>missar inga.</div>
+    <div class="lbl" style="left: 6%;">margin · 6%</div>
+    <div class="lbl" style="right: 6%;">margin · 6%</div>
+  </div>
+  <div class="note">Klarna-derived: <strong>6% margin</strong> of the shortest side, gutter <strong>= margin/2</strong>, trademark width <strong>= 1/3</strong> of the shortest side. Type-led layouts breathe; never compete with imagery.</div>
+</body>
+</html>

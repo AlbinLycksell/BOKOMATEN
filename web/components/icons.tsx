@@ -6,6 +6,7 @@ import {
   Circle,
   Clock,
   Cog,
+  FlaskConical,
   Inbox,
   MessageSquare,
   Pause,
@@ -21,6 +22,7 @@ export const InboxIcon = Inbox;
 export const CalendarIcon = Calendar;
 export const CustomersIcon = Users;
 export const SettingsIcon = Cog;
+export const AdminIcon = FlaskConical;
 export const PhoneIcon = Phone;
 export const PhoneCallIcon = PhoneCall;
 export const UrgentIcon = AlertTriangle;

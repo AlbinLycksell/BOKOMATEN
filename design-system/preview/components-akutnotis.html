@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Components · Akutnotis</title>
+<link rel="stylesheet" href="../colors_and_type.css"/>
+<style>
+  body { padding: 22px 28px; background: var(--linne); }
+  .stage { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: center; }
+  .akut { background: var(--signal); color: #fff; border-radius: 18px; padding: 18px 20px; box-shadow: 0 0 0 4px rgba(226,88,34,0.18), 0 8px 24px -6px rgba(226,88,34,0.30); }
+  .meta { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.85; }
+  .title { font-family: var(--font-display); font-weight: 600; font-size: 22px; line-height: 1.18; letter-spacing: -0.012em; margin: 8px 0 6px; }
+  .who { font-size: 14px; opacity: 0.92; font-feature-settings: "tnum" 1; }
+  .actions { display: flex; gap: 8px; margin-top: 12px; }
+  .a { flex: 1; height: 40px; border: 1px solid rgba(255,255,255,0.6); border-radius: 9999px; background: transparent; color: #fff; font-weight: 500; font-size: 14px; font-family: var(--font-body); }
+  .a.primary { background: #fff; color: var(--signaloranje-press); border-color: #fff; }
+  .right { font-size: 13px; color: var(--fg-muted); line-height: 1.6; }
+</style>
+</head>
+<body class="verkstad">
+  <div class="stage">
+    <div class="akut">
+      <div class="meta">AKUT · vattenläcka</div>
+      <div class="title">Inger Lindqvist · Bromma</div>
+      <div class="who">Ringde 14:32 · 070-512 44 19</div>
+      <div class="actions">
+        <button class="a primary">Ta jobbet</button>
+        <button class="a">Skicka till Alex</button>
+      </div>
+    </div>
+    <div class="right">
+      The akutnotis is the single most important surface in the system. It pulses once, then stillness. The orange is sacred — it says "this is now waiting on you." Single-handed, single-thumb, eight-second decision.
+    </div>
+  </div>
+</body>
+</html>

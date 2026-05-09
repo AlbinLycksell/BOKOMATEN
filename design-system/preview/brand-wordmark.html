@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Brand · Wordmark</title>
+<link rel="stylesheet" href="../colors_and_type.css"/>
+<style>
+  body { padding: 24px 28px; background: var(--linne); }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .pane { border-radius: 12px; padding: 22px 24px; display: flex; align-items: center; gap: 12px; }
+  .light { background: var(--linne); border: 1px solid var(--border); }
+  .dark  { background: var(--havsbla); }
+  .word { font-family: var(--font-display); font-weight: 600; letter-spacing: -0.025em; font-size: 44px; line-height: 1; }
+  .light .word { color: var(--havsbla); }
+  .dark  .word { color: var(--linne); }
+  .dot { display: inline-block; width: 0.36em; height: 0.36em; background: var(--signal); border-radius: 50%; vertical-align: baseline; transform: translateY(0.04em); margin-left: 0.04em; }
+  .label { margin-top: 12px; font-family: var(--font-mono); font-size: 11px; color: var(--fg-muted); letter-spacing: 0.06em; }
+</style>
+</head>
+<body class="verkstad">
+  <div class="row">
+    <div>
+      <div class="pane light"><span class="word">Switchboard<span class="dot"></span></span></div>
+      <div class="label">Light · linne #F4EFE6</div>
+    </div>
+    <div>
+      <div class="pane dark"><span class="word">Switchboard<span class="dot"></span></span></div>
+      <div class="label">Dark · havsblå #0A1F33</div>
+    </div>
+  </div>
+</body>
+</html>

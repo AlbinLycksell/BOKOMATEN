@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Type · Body & quote</title>
+<link rel="stylesheet" href="../colors_and_type.css"/>
+<style>
+  html, body { margin:0; padding:0; }
+  body { background: var(--linne); font-family: var(--font-body); color: var(--fg); padding: 22px 28px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .label { font-family: var(--font-mono); font-size: 11px; color: var(--fg-muted); letter-spacing: 0.04em; margin-bottom: 8px; }
+  .body { font-size: 16px; line-height: 1.55; max-width: 56ch; color: var(--fg); }
+  .lead { font-family: var(--font-display); font-size: 22px; line-height: 1.35; font-weight: 500; color: var(--fg-strong); letter-spacing: -0.005em; }
+  .quote { font-family: var(--font-display); font-size: 28px; line-height: 1.25; font-weight: 500; color: var(--fg-strong); letter-spacing: -0.012em; }
+  .who { font-size: 13px; color: var(--fg-muted); margin-top: 10px; }
+</style>
+</head>
+<body>
+  <div class="grid">
+    <div>
+      <div class="label">Lead — editorial intro</div>
+      <div class="lead">Du fångade tre akutjobb i natt. Inger Lindqvist har bokat ett besök på torsdag — och du har sparat två luncher.</div>
+    </div>
+    <div>
+      <div class="label">Body — running text</div>
+      <div class="body">När en kund ringer svarar Switchboard inom två signaler. Den frågar artigt vad det gäller, var hen befinner sig, och hur akut det är. Sedan bokar den in tiden direkt i din kalender.</div>
+    </div>
+    <div style="grid-column:1/-1">
+      <div class="label">Quote — pull-out</div>
+      <div class="quote">"Det här ser ut som något jag redan använder."</div>
+      <div class="who">Magnus, 47, VVS-företagare i Bromma</div>
+    </div>
+  </div>
+</body>
+</html>

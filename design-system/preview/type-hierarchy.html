@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Type · Hierarchy</title>
+<link rel="stylesheet" href="../colors_and_type.css"/>
+<style>
+  html, body { margin:0; padding:0; }
+  body { background: var(--linne); font-family: var(--font-body); color: var(--fg); padding: 22px 28px; }
+  .row { display: grid; grid-template-columns: 130px 1fr; gap: 18px; align-items: baseline; padding: 9px 0; border-bottom: 1px solid var(--border); }
+  .row:last-child { border-bottom: 0; }
+  .label { font-family: var(--font-mono); font-size: 11px; color: var(--fg-muted); letter-spacing: 0.04em; }
+  .h1 { font-family: var(--font-display); font-size: 48px; font-weight: 600; color: var(--fg-strong); letter-spacing: -0.02em; line-height: 1.1; }
+  .h2 { font-family: var(--font-display); font-size: 32px; font-weight: 600; color: var(--fg-strong); letter-spacing: -0.01em; }
+  .h3 { font-family: var(--font-display); font-size: 22px; font-weight: 500; color: var(--fg-strong); }
+  .h4 { font-family: var(--font-display); font-size: 18px; font-weight: 500; color: var(--fg-strong); }
+  .body { font-size: 16px; color: var(--fg); line-height: 1.5; }
+  .small { font-size: 14px; color: var(--fg-muted); }
+  .meta { font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--fg-muted); }
+</style>
+</head>
+<body>
+  <div class="row"><div class="label">H1 · 48 / 600</div><div class="h1">Boka in tid med Magnus</div></div>
+  <div class="row"><div class="label">H2 · 32 / 600</div><div class="h2">Du fångade tre akutjobb i natt</div></div>
+  <div class="row"><div class="label">H3 · 22 / 500</div><div class="h3">Vattenläcka hos Inger Lindqvist</div></div>
+  <div class="row"><div class="label">H4 · 18 / 500</div><div class="h4">Bromma · 14:32</div></div>
+  <div class="row"><div class="label">Body · 16 / 400</div><div class="body">Inger ringde 14:32. AI:n bokade in ett besök kl 16:00 hos Magnus. Kunden bekräftade adressen och fick en SMS-länk.</div></div>
+  <div class="row"><div class="label">Small · 14 / 400</div><div class="small">Sammanfattning genererad av Switchboard. Ändra om något ser fel ut.</div></div>
+  <div class="row"><div class="label">Meta · 12 / upper</div><div class="meta">22 maj · 14:32 · 4 min 12 sek</div></div>
+</body>
+</html>

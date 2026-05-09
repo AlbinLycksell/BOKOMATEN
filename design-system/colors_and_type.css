@@ -1,0 +1,361 @@
+/* ============================================================
+   VERKSTAD — Switchboard Design Tokens
+   The narrow palette is intentional. A wider one would dilute
+   the signal. If you want to add an eighth color, defend why.
+   ============================================================ */
+
+/* -- Webfonts ------------------------------------------------ */
+/*  Substitution flag: Söhne (paid, Klim) → Geist (OFL, via Google Fonts).
+    Replace this @import + the --font-* tokens below with Söhne when
+    the licensed .woff2 files arrive in /fonts.                    */
+
+@import url("https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap");
+
+:root {
+  /* ===== Color =========================================== */
+  /* Brand */
+  --havsbla:        #0A1F33;  /* primary brand — dark navy, not pure black */
+  --havsbla-85:     #1B2D40;  /* hover/press deepening of navy */
+  --havsbla-70:     #3D4D5C;  /* secondary type on light surfaces */
+
+  /* Surface — Pleo-warm, not clinical */
+  --linne:          #F4EFE6;  /* primary off-white surface (linen) */
+  --linne-cool:     #FAFAF7;  /* cooler variant for product UI over photography */
+  --linne-deep:     #EAE3D5;  /* dividers, subtle fills, panel backs */
+
+  /* Signal — sacred. Use only for primary CTA, akutnotis, wordmark dot,
+     and 1–2 intentional marketing moments per year. Never decoration. */
+  --signaloranje:   #E25822;
+  --signaloranje-press: #C84612;
+
+  /* Semantic */
+  --tallgron:       #2F5233;  /* confirmed bookings, positive — Swedish pine */
+  --larmrod:        #A82E2E;  /* genuine critical state — gas leak / payment fail */
+
+  /* Warm neutral ramp (5 steps + ink). Tuned with a touch of yellow,
+     never blue. These are the dashboard's grays. */
+  --grey-50:        #F1ECE2;
+  --grey-100:       #DDD6C8;
+  --grey-300:       #B5AC9B;
+  --grey-500:       #7C7466;
+  --grey-700:       #4A4538;
+  --ink:            #14110B;  /* body type on linne — slightly warmer than havsbla */
+
+  /* ===== Semantic role tokens ============================ */
+  --bg:             var(--linne);
+  --bg-product:     var(--linne-cool);
+  --bg-inverse:     var(--havsbla);
+  --surface-sunken: var(--linne-deep);
+
+  --fg:             var(--ink);
+  --fg-muted:       var(--grey-500);
+  --fg-strong:      var(--havsbla);
+  --fg-on-dark:     var(--linne);
+  --fg-on-signal:   #FFFFFF;
+
+  --border:         var(--grey-100);
+  --border-strong:  var(--grey-300);
+  --border-on-dark: rgba(244, 239, 230, 0.14);
+
+  --signal:         var(--signaloranje);
+  --positive:       var(--tallgron);
+  --critical:       var(--larmrod);
+
+  /* ===== Typography ===================================== */
+  --font-display:   "Geist", "Söhne", "Söhne Breit", "Helvetica Neue", Arial, sans-serif;
+  --font-body:      "Geist", "Söhne", "Helvetica Neue", Arial, sans-serif;
+  --font-mono:      "Geist Mono", "Söhne Mono", "JetBrains Mono", ui-monospace, monospace;
+
+  /* Tabular numerals are mandatory for time, currency, phone numbers. */
+  --tabular: "tnum" 1, "lnum" 1;
+
+  /* Type scale — scale headlines aggressively (Klarna principle).
+     Sizes in rem assuming 16px root. Line-heights tuned for grotesque. */
+  --t-display-xl:   clamp(56px, 9vw, 144px);   /* hero on marketing */
+  --t-display-l:    clamp(44px, 6.5vw, 96px);  /* section starter */
+  --t-display-m:    clamp(32px, 4vw, 64px);    /* eyebrow display */
+  --t-h1:           48px;
+  --t-h2:           32px;
+  --t-h3:           22px;
+  --t-h4:           18px;
+  --t-body:         16px;     /* default body */
+  --t-body-l:       18px;     /* editorial running text */
+  --t-body-s:       14px;     /* secondary, captions */
+  --t-meta:         12px;     /* timestamp, micro-label */
+
+  --lh-display:     1.02;
+  --lh-h:           1.12;
+  --lh-body:        1.5;
+  --lh-tight:       1.2;
+
+  --tracking-display: -0.02em;
+  --tracking-h:       -0.01em;
+  --tracking-body:    0;
+  --tracking-meta:    0.02em;
+
+  /* ===== Spacing — 4px base ============================= */
+  --s-1:  4px;
+  --s-2:  8px;
+  --s-3:  12px;
+  --s-4:  16px;
+  --s-5:  20px;
+  --s-6:  24px;
+  --s-8:  32px;
+  --s-10: 40px;
+  --s-12: 48px;
+  --s-16: 64px;
+  --s-20: 80px;
+  --s-24: 96px;
+  --s-32: 128px;
+
+  /* Klarna-derived layout grid. Margins are 6% of shortest side
+     in single-margin contexts, 12% in double-margin. Gutter = margin/2. */
+  --grid-margin-pct:        6%;
+  --grid-margin-double-pct: 12%;
+  --grid-gutter-pct:        3%;
+  --trademark-width-pct:    33.333%;   /* 1/3 of shortest side */
+
+  /* ===== Radii — pill buttons are signature (Pleo) ====== */
+  --r-pill:    9999px;   /* buttons, tags */
+  --r-card:    14px;     /* cards, panels */
+  --r-input:   10px;     /* inputs, selects */
+  --r-tight:   6px;      /* small chips, code */
+  --r-none:    0;
+
+  /* ===== Borders ======================================== */
+  --bw-hairline: 1px;
+  --bw-strong:   2px;
+
+  /* ===== Shadows — restrained. The product is calm. ==== */
+  /* Verkstad uses a soft, warm-tinted shadow. Never the
+     bluish grey shadow of consumer SaaS. */
+  --shadow-1: 0 1px 2px rgba(20, 17, 11, 0.06);
+  --shadow-2: 0 6px 18px -8px rgba(20, 17, 11, 0.18),
+              0 2px 4px rgba(20, 17, 11, 0.05);
+  --shadow-3: 0 24px 48px -16px rgba(20, 17, 11, 0.22),
+              0 4px 8px rgba(20, 17, 11, 0.06);
+  /* The signal halo — used ONLY on the akutnotis card */
+  --shadow-signal: 0 0 0 4px rgba(226, 88, 34, 0.18),
+                   0 8px 24px -6px rgba(226, 88, 34, 0.30);
+
+  /* ===== Motion ========================================= */
+  --ease-standard: cubic-bezier(0.2, 0.0, 0.0, 1.0);   /* functional */
+  --ease-out:      cubic-bezier(0.0, 0.0, 0.2, 1.0);
+  --ease-in:       cubic-bezier(0.4, 0.0, 1.0, 1.0);
+  --dur-1:  120ms;   /* modal fade, tooltip */
+  --dur-2:  200ms;   /* page tab change */
+  --dur-3:  320ms;   /* drawer / sheet */
+  --dur-pulse: 1400ms; /* active-call heartbeat */
+}
+
+/* ============================================================
+   Semantic element styles — opt-in via class, never global reset.
+   Apply to body of marketing pages or use the helpers individually.
+   ============================================================ */
+
+.verkstad {
+  font-family: var(--font-body);
+  font-size: var(--t-body);
+  line-height: var(--lh-body);
+  color: var(--fg);
+  background: var(--bg);
+  font-feature-settings: var(--tabular);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+.verkstad h1, .v-h1 {
+  font-family: var(--font-display);
+  font-size: var(--t-h1);
+  line-height: var(--lh-h);
+  letter-spacing: var(--tracking-h);
+  font-weight: 600;
+  color: var(--fg-strong);
+  margin: 0;
+}
+.verkstad h2, .v-h2 {
+  font-family: var(--font-display);
+  font-size: var(--t-h2);
+  line-height: var(--lh-h);
+  letter-spacing: var(--tracking-h);
+  font-weight: 600;
+  color: var(--fg-strong);
+  margin: 0;
+}
+.verkstad h3, .v-h3 {
+  font-family: var(--font-display);
+  font-size: var(--t-h3);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--tracking-h);
+  font-weight: 500;
+  color: var(--fg-strong);
+  margin: 0;
+}
+.verkstad h4, .v-h4 {
+  font-family: var(--font-display);
+  font-size: var(--t-h4);
+  line-height: var(--lh-tight);
+  font-weight: 500;
+  color: var(--fg-strong);
+  margin: 0;
+}
+
+.v-display-xl {
+  font-family: var(--font-display);
+  font-size: var(--t-display-xl);
+  line-height: var(--lh-display);
+  letter-spacing: var(--tracking-display);
+  font-weight: 600;
+  color: var(--fg-strong);
+  text-wrap: pretty;
+}
+.v-display-l {
+  font-family: var(--font-display);
+  font-size: var(--t-display-l);
+  line-height: var(--lh-display);
+  letter-spacing: var(--tracking-display);
+  font-weight: 600;
+  color: var(--fg-strong);
+  text-wrap: pretty;
+}
+
+.v-body    { font-size: var(--t-body); line-height: var(--lh-body); }
+.v-body-l  { font-size: var(--t-body-l); line-height: var(--lh-body); }
+.v-body-s  { font-size: var(--t-body-s); line-height: var(--lh-body); color: var(--fg-muted); }
+.v-meta    { font-size: var(--t-meta); line-height: 1.4; letter-spacing: var(--tracking-meta); text-transform: uppercase; color: var(--fg-muted); }
+
+.v-mono    { font-family: var(--font-mono); font-feature-settings: var(--tabular); }
+.v-tnum    { font-feature-settings: var(--tabular); font-variant-numeric: tabular-nums; }
+
+/* ============================================================
+   Buttons — pill, signature.
+   .v-btn is the base; modifiers select intent.
+   ============================================================ */
+.v-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
+  height: 48px;
+  padding: 0 var(--s-6);
+  border-radius: var(--r-pill);
+  border: var(--bw-hairline) solid transparent;
+  font-family: var(--font-body);
+  font-size: var(--t-body);
+  font-weight: 500;
+  letter-spacing: 0;
+  cursor: pointer;
+  transition: background var(--dur-1) var(--ease-standard),
+              border-color var(--dur-1) var(--ease-standard),
+              color var(--dur-1) var(--ease-standard);
+  user-select: none;
+}
+.v-btn--primary {
+  background: var(--signal);
+  color: var(--fg-on-signal);
+  border-color: var(--signal);
+}
+.v-btn--primary:hover  { background: var(--signaloranje-press); border-color: var(--signaloranje-press); }
+.v-btn--primary:active { background: var(--signaloranje-press); }
+
+.v-btn--navy {
+  background: var(--havsbla);
+  color: var(--fg-on-dark);
+  border-color: var(--havsbla);
+}
+.v-btn--navy:hover  { background: var(--havsbla-85); border-color: var(--havsbla-85); }
+
+.v-btn--secondary {
+  background: transparent;
+  color: var(--havsbla);
+  border-color: var(--havsbla);
+}
+.v-btn--secondary:hover { background: var(--havsbla); color: var(--fg-on-dark); }
+
+.v-btn--ghost {
+  background: transparent;
+  color: var(--havsbla);
+  border-color: transparent;
+}
+.v-btn--ghost:hover { background: var(--linne-deep); }
+
+.v-btn--sm { height: 36px; padding: 0 var(--s-4); font-size: var(--t-body-s); }
+.v-btn--lg { height: 56px; padding: 0 var(--s-8); font-size: var(--t-body-l); }
+
+/* ============================================================
+   Inputs
+   ============================================================ */
+.v-input {
+  width: 100%;
+  height: 48px;
+  padding: 0 var(--s-4);
+  border-radius: var(--r-input);
+  border: var(--bw-hairline) solid var(--border-strong);
+  background: #FFFFFF;
+  font-family: var(--font-body);
+  font-size: var(--t-body);
+  color: var(--fg);
+  font-feature-settings: var(--tabular);
+}
+.v-input:focus {
+  outline: none;
+  border-color: var(--havsbla);
+  box-shadow: 0 0 0 3px rgba(10, 31, 51, 0.12);
+}
+
+/* ============================================================
+   Cards — restrained, warm, hairline borders not heavy shadows
+   ============================================================ */
+.v-card {
+  background: #FFFFFF;
+  border: var(--bw-hairline) solid var(--border);
+  border-radius: var(--r-card);
+  box-shadow: var(--shadow-1);
+}
+.v-card--sunken {
+  background: var(--linne-deep);
+  border-color: transparent;
+  box-shadow: none;
+}
+.v-card--inverse {
+  background: var(--havsbla);
+  color: var(--fg-on-dark);
+  border-color: var(--border-on-dark);
+}
+
+/* ============================================================
+   Wordmark dot — the orange accent
+   ============================================================ */
+.v-dot {
+  display: inline-block;
+  width: 0.42em;
+  height: 0.42em;
+  background: var(--signal);
+  border-radius: 50%;
+  vertical-align: baseline;
+  transform: translateY(0.04em);
+  margin-left: 0.04em;
+}
+
+/* ============================================================
+   Akutnotis pulse — single attention pulse, then stillness.
+   Not a continuous wobble. Use sparingly.
+   ============================================================ */
+@keyframes v-akut-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(226, 88, 34, 0.55); }
+  60%  { box-shadow: 0 0 0 24px rgba(226, 88, 34, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(226, 88, 34, 0); }
+}
+.v-akut-pulse {
+  animation: v-akut-pulse 1400ms var(--ease-out) 1;
+}
+
+/* Active-call heartbeat — calm, slow, indicates an in-progress call */
+@keyframes v-heartbeat {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.45; transform: scale(0.92); }
+}
+.v-heartbeat {
+  animation: v-heartbeat var(--dur-pulse) ease-in-out infinite;
+}

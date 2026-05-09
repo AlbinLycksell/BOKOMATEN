@@ -83,4 +83,5 @@ def test_tool_declarations_build_without_error() -> None:
     names = {d.name for d in decls}
     assert "lookup_customer" in names
     assert "escalate_to_owner" in names
-    assert len(names) == 12
+    assert "disable_recording_for_call" in names
+    assert len(names) == 13

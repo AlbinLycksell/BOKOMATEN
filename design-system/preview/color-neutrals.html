@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Color · Neutral ramp</title>
+<link rel="stylesheet" href="../colors_and_type.css"/>
+<style>
+  html, body { margin:0; padding:0; }
+  body { background: var(--linne); font-family: var(--font-body); color: var(--fg); padding: 22px 24px; }
+  .note { font-size: 13px; color: var(--fg-muted); margin-bottom: 12px; max-width: 640px; line-height: 1.5; }
+  .ramp { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+  .step { border-radius: 10px; overflow: hidden; border: 1px solid var(--border); background: #fff; }
+  .chip { height: 72px; }
+  .meta { padding: 8px 10px 10px; }
+  .name { font-size: 12px; font-weight: 500; color: var(--fg-strong); }
+  .hex  { font-family: var(--font-mono); font-size: 11px; color: var(--fg-muted); margin-top: 2px; }
+</style>
+</head>
+<body>
+  <div class="note">Five-step neutral ramp + ink + linne, tuned <em>warm</em> — a hint of yellow in the gray, never blue. The product UI's secondary text, dividers, disabled states.</div>
+  <div class="ramp">
+    <div class="step"><div class="chip" style="background:#F4EFE6"></div><div class="meta"><div class="name">linne</div><div class="hex">#F4EFE6</div></div></div>
+    <div class="step"><div class="chip" style="background:#F1ECE2"></div><div class="meta"><div class="name">grey-50</div><div class="hex">#F1ECE2</div></div></div>
+    <div class="step"><div class="chip" style="background:#DDD6C8"></div><div class="meta"><div class="name">grey-100</div><div class="hex">#DDD6C8</div></div></div>
+    <div class="step"><div class="chip" style="background:#B5AC9B"></div><div class="meta"><div class="name">grey-300</div><div class="hex">#B5AC9B</div></div></div>
+    <div class="step"><div class="chip" style="background:#7C7466"></div><div class="meta"><div class="name">grey-500</div><div class="hex" style="color:#DDD6C8">#7C7466</div></div></div>
+    <div class="step"><div class="chip" style="background:#4A4538"></div><div class="meta"><div class="name">grey-700</div><div class="hex">#4A4538</div></div></div>
+    <div class="step"><div class="chip" style="background:#14110B"></div><div class="meta"><div class="name">ink</div><div class="hex">#14110B</div></div></div>
+  </div>
+</body>
+</html>

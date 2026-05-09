@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Components · Cards</title>
+<link rel="stylesheet" href="../colors_and_type.css"/>
+<style>
+  body { padding: 22px 28px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .card { padding: 16px 18px; }
+  .meta { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--fg-muted); margin-bottom: 8px; }
+  .title { font-family: var(--font-display); font-weight: 600; font-size: 19px; color: var(--fg-strong); letter-spacing: -0.01em; }
+  .row { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 13px; color: var(--fg-muted); font-feature-settings: "tnum" 1; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--signal); }
+</style>
+</head>
+<body class="verkstad">
+  <div class="grid">
+    <div class="v-card card">
+      <div class="meta">Default · hairline</div>
+      <div class="title">Inger Lindqvist</div>
+      <div class="row"><span class="dot" style="background:#2F5233"></span>Bokad 23 maj &middot; 16:00</div>
+    </div>
+    <div class="v-card v-card--sunken card">
+      <div class="meta">Sunken · linne-deep</div>
+      <div class="title">3 missade samtal i dag</div>
+      <div class="row">Lägsta värde sedan vecka 17</div>
+    </div>
+    <div class="v-card v-card--inverse card" style="grid-column: 1 / -1;">
+      <div class="meta" style="color: rgba(244,239,230,0.6)">Inverse · havsblå</div>
+      <div class="title" style="color: var(--fg-on-dark)">Du fångade tre akutjobb i natt — kosta dig själv en till kopp kaffe på det.</div>
+    </div>
+  </div>
+</body>
+</html>
