@@ -1,0 +1,28 @@
+name: eval-weekly
+
+on:
+  schedule:
+    - cron: "0 6 * * 0"  # Sunday 06:00 UTC = 08:00 CEST
+  workflow_dispatch:
+    inputs:
+      dataset:
+        description: "Path to eval dataset (jsonl)"
+        required: false
+        default: "backend/eval/sample.jsonl"
+
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: install
+        working-directory: backend
+        run: uv sync --extra dev
+      - name: run eval
+        working-directory: backend
+        env:
+          SVARSA_EVAL_SLACK_WEBHOOK: ${{ secrets.SVARSA_EVAL_SLACK_WEBHOOK }}
+        run: |
+          DATASET="${{ inputs.dataset || 'eval/sample.jsonl' }}"
+          uv run run-eval "$DATASET" --fail-below 0.85 --fail-emergency-fn 0
