@@ -42,6 +42,7 @@ from svarsa.models.firma import (
     Integration,
     PhoneNumber,
     User,
+    UserFirmaMembership,
 )
 from svarsa.models.job import Job, JobRead
 
@@ -85,4 +86,5 @@ __all__ = [
     "TranscriptSegment",
     "TranscriptSegmentRead",
     "User",
+    "UserFirmaMembership",
 ]
